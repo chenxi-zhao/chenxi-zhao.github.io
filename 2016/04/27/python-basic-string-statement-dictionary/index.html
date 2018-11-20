@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.tmaczhao.cn/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Lobster Two:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.2" rel="stylesheet" type="text/css">
+
+
+  <meta name="keywords" content="python,基础语法,集合,字符串,">
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.2">
+
+
+
+
+
+
+<meta name="description" content="Python字符串 Python中不支持char单字符类型，单字符在Python中也是一个字符串  Python字符串更新更新Python字符串方法1234#!/usr/bin/pythonvar1 = &apos;Hello World!&apos;print &quot;Updated String :- &quot;, var1[:6] + &apos;Python&apos; 实际执行效果为  Updated String :-  Hello Py">
+<meta name="keywords" content="python,基础语法,集合,字符串">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python基础语法—字符串&amp;语句&amp;集合">
+<meta property="og:url" content="http://yoursite.com/2016/04/27/python-basic-string-statement-dictionary/index.html">
+<meta property="og:site_name" content="Tracy.Zhao&#39;s Notes">
+<meta property="og:description" content="Python字符串 Python中不支持char单字符类型，单字符在Python中也是一个字符串  Python字符串更新更新Python字符串方法1234#!/usr/bin/pythonvar1 = &apos;Hello World!&apos;print &quot;Updated String :- &quot;, var1[:6] + &apos;Python&apos; 实际执行效果为  Updated String :-  Hello Py">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-11-06T09:59:43.417Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Python基础语法—字符串&amp;语句&amp;集合">
+<meta name="twitter:description" content="Python字符串 Python中不支持char单字符类型，单字符在Python中也是一个字符串  Python字符串更新更新Python字符串方法1234#!/usr/bin/pythonvar1 = &apos;Hello World!&apos;print &quot;Updated String :- &quot;, var1[:6] + &apos;Python&apos; 实际执行效果为  Updated String :-  Hello Py">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.2',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn"}},
+    duoshuo: {
+      userId: 'undefined',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2016/04/27/python-basic-string-statement-dictionary/">
+
+
+
+
+
+  <title>Python基础语法—字符串&语句&集合 | Tracy.Zhao's Notes</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Tracy.Zhao's Notes</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Stay Hungry, Stay Foolish.</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/04/27/python-basic-string-statement-dictionary/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Tracy. Zhao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Tracy.Zhao's Notes">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Python基础语法—字符串&语句&集合</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-04-27T09:54:33+08:00">
+                2016-04-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/python/" itemprop="url" rel="index">
+                    <span itemprop="name">python</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2016/04/27/python-basic-string-statement-dictionary/" class="leancloud_visitors" data-flag-title="Python基础语法—字符串&语句&集合">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数&#58;</span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Python字符串"><a href="#Python字符串" class="headerlink" title="Python字符串"></a>Python字符串</h2><blockquote>
+<p>Python中不支持char单字符类型，单字符在Python中也是一个字符串</p>
+</blockquote>
+<h3 id="Python字符串更新"><a href="#Python字符串更新" class="headerlink" title="Python字符串更新"></a>Python字符串更新</h3><p>更新Python字符串方法<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"></span><br><span class="line">var1 = <span class="string">'Hello World!'</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">"Updated String :- "</span>, var1[:<span class="number">6</span>] + <span class="string">'Python'</span></span><br></pre></td></tr></table></figure></p>
+<p>实际执行效果为</p>
+<blockquote>
+<p>Updated String :-  Hello Python这样子</p>
+</blockquote>
+<a id="more"></a>
+<h3 id="Python转义字符"><a href="#Python转义字符" class="headerlink" title="Python转义字符"></a>Python转义字符</h3><p>![][python转义]<br>[python转义]:<a href="https://static.tmaczhao.cn/images/python/python%E8%BD%AC%E4%B9%89.png" target="_blank" rel="noopener">https://static.tmaczhao.cn/images/python/python%E8%BD%AC%E4%B9%89.png</a></p>
+<h3 id="Python字符串运算符"><a href="#Python字符串运算符" class="headerlink" title="Python字符串运算符"></a>Python字符串运算符</h3><p>![][Python字符串运算符]<br>[Python字符串运算符]:<a href="https://static.tmaczhao.cn/images/python/Python%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%BF%90%E7%AE%97%E7%AC%A6.png" target="_blank" rel="noopener">https://static.tmaczhao.cn/images/python/Python%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%BF%90%E7%AE%97%E7%AC%A6.png</a></p>
+<h3 id="Python字符串格式化"><a href="#Python字符串格式化" class="headerlink" title="Python字符串格式化"></a>Python字符串格式化</h3><p>![][Python字符串格式化]<br>[Python字符串格式化]:<a href="https://static.tmaczhao.cn/images/python/Python%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%A0%BC%E5%BC%8F%E5%8C%96.png" target="_blank" rel="noopener">https://static.tmaczhao.cn/images/python/Python%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%A0%BC%E5%BC%8F%E5%8C%96.png</a></p>
+<h3 id="Python三引号（triple-quotes）"><a href="#Python三引号（triple-quotes）" class="headerlink" title="Python三引号（triple quotes）"></a>Python三引号（triple quotes）</h3><p>python中三引号可以将复杂的字符串进行复制:</p>
+<blockquote>
+<p>python三引号允许一个字符串跨多行，字符串中可以包含换行符、制表符以及其他特殊字符。</p>
+</blockquote>
+<h3 id="Python字符串函数"><a href="#Python字符串函数" class="headerlink" title="Python字符串函数"></a>Python字符串函数</h3><p><a href="http://www.runoob.com/python/python-strings.html" target="_blank" rel="noopener">python字符串内建</a></p>
+<ul>
+<li>string.capitalize() 首字母大写</li>
+<li>string.count(str, beg=0, end=len(string)) 返回beg与end之间的str在string中出现的次数</li>
+<li>string.decode(encoding=’UTF-8’, errors=’strict’) 以 encoding指定的编码格式解码string，如果出错默认报一个 ValueError 的 异 常，除非errors指定的是’ignore’或 者’replace’</li>
+<li>string.encode(encoding=’UTF-8’, errors=’strict’) 以 encoding 指定的编码格式编码 string</li>
+<li>string.endswith(obj, beg=0, end=len(string))</li>
+<li>string.find(str, beg=0, end=len(string)) 没有返回-1</li>
+<li>string.isalnum() 如果string至少有一个字符并且所有字符都是字母或数字则返回 True,否则返回 False</li>
+<li>……</li>
+</ul>
+<h2 id="Python逻辑语句"><a href="#Python逻辑语句" class="headerlink" title="Python逻辑语句"></a>Python逻辑语句</h2><h3 id="Python条件语句"><a href="#Python条件语句" class="headerlink" title="Python条件语句"></a>Python条件语句</h3><p>注意Python语句中的括号及语句块的使用，另外Python中没有switch语句只能使用elif替代：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">num = <span class="number">5</span></span><br><span class="line"><span class="keyword">if</span> num == <span class="number">3</span>:    <span class="comment"># 判断num的值</span></span><br><span class="line">    <span class="keyword">print</span> <span class="string">'boss'</span></span><br><span class="line"><span class="keyword">elif</span> num == <span class="number">2</span>:</span><br><span class="line">    <span class="keyword">print</span> <span class="string">'user'</span></span><br><span class="line"><span class="keyword">elif</span> num == <span class="number">1</span>:</span><br><span class="line">    <span class="keyword">print</span> <span class="string">'worker'</span></span><br><span class="line"><span class="keyword">elif</span> num &lt; <span class="number">0</span>:        <span class="comment"># 值小于零时输出</span></span><br><span class="line">    <span class="keyword">print</span> <span class="string">'error'</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="keyword">print</span> <span class="string">'roadman'</span>  <span class="comment"># 条件均不成立时输出</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="Python循环语句"><a href="#Python循环语句" class="headerlink" title="Python循环语句"></a>Python循环语句</h3><p>Python中支持while循环和for循环（不支持do while）。</p>
+<h4 id="while循环"><a href="#while循环" class="headerlink" title="while循环"></a>while循环</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">i = <span class="number">1</span></span><br><span class="line"><span class="keyword">while</span> i &lt; <span class="number">10</span>:</span><br><span class="line">    i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> i%<span class="number">2</span> &gt; <span class="number">0</span>:     <span class="comment"># 非双数时跳过输出</span></span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    <span class="keyword">print</span> i         <span class="comment"># 输出双数2、4、6、8、10</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">**该条件永远为true，循环将无限执行下去**</span><br><span class="line">var = <span class="number">1</span></span><br><span class="line"><span class="keyword">while</span> var == <span class="number">1</span> :</span><br><span class="line">   num = raw_input(<span class="string">"Enter a number  :"</span>)</span><br><span class="line">   <span class="keyword">print</span> <span class="string">"You entered: "</span>, num</span><br></pre></td></tr></table></figure>
+<p>如果循环体只有一条语句可以与while写在同一行</p>
+<h4 id="For循环"><a href="#For循环" class="headerlink" title="For循环"></a>For循环</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> letter <span class="keyword">in</span> <span class="string">'Python'</span>:     <span class="comment"># First Example</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">'Current Letter :'</span>, letter</span><br><span class="line"></span><br><span class="line">fruits = [<span class="string">'banana'</span>, <span class="string">'apple'</span>,  <span class="string">'mango'</span>]</span><br><span class="line"><span class="keyword">for</span> fruit <span class="keyword">in</span> fruits:        <span class="comment"># Second Example</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">'Current fruit :'</span>, fruit</span><br><span class="line"></span><br><span class="line">fruits = [<span class="string">'banana'</span>, <span class="string">'apple'</span>,  <span class="string">'mango'</span>]</span><br><span class="line"><span class="keyword">for</span> index <span class="keyword">in</span> range(len(fruits)): <span class="comment">#len是求长函数</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">'Current fruit :'</span>, fruits[index]</span><br></pre></td></tr></table></figure>
+<p><strong>Python break语句</strong><br>break语句打破当前循环不继续执行，如果循环嵌套，打破代码所在层的循环并执行外层循环。<br><strong>Python continue</strong><br>continue语句跳出本次循环，继续执行下一次循环<br><strong>Python pass</strong><br>pass语句是空语句，保证程序结构完整性，不做任何处理，占位</p>
+<h2 id="Python集合"><a href="#Python集合" class="headerlink" title="Python集合"></a>Python集合</h2><p>python集合包括List、Tuple和Dictionary</p>
+<h3 id="Python中的List"><a href="#Python中的List" class="headerlink" title="Python中的List"></a>Python中的List</h3><p>详见python文件</p>
+<ol>
+<li><p>更新list元素</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">list1[<span class="number">1</span>] = <span class="string">'math'</span></span><br><span class="line">print(<span class="string">'list1[1]:'</span>, list1[<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>删除list元素</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">del</span> list3[len(list3) - <span class="number">1</span>]</span><br><span class="line">print(<span class="string">'list3:'</span>, list3)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Python列表脚本操作符</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">print(<span class="string">'--------Python列表脚本操作符--------'</span>)</span><br><span class="line">print([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>] + [<span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>])  <span class="comment"># list合并</span></span><br><span class="line">print(len([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]))  <span class="comment"># List长度</span></span><br><span class="line">print([<span class="string">'Hi!'</span>] * <span class="number">4</span>)  <span class="comment"># 重复输出</span></span><br><span class="line">print(<span class="number">3</span> <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>])  <span class="comment"># 元素是否存在List中</span></span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]:  <span class="comment"># 迭代</span></span><br><span class="line">    print(x)</span><br><span class="line">L = [<span class="string">'spam'</span>, <span class="string">'Spam'</span>, <span class="string">'SPAM!'</span>]</span><br><span class="line">print(L[<span class="number">2</span>])  <span class="comment"># 'SPAM!'  读取列表中第三个元素</span></span><br><span class="line">print(L[<span class="number">-2</span>])  <span class="comment"># 'Spam'  读取列表中倒数第二个元素</span></span><br><span class="line">print(L[<span class="number">1</span>:])  <span class="comment"># ['Spam', 'SPAM!' 从第二个元素开始截取列表</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Python列表函数&amp;方法</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">test1 = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>]</span><br><span class="line">aTuple = (<span class="number">123</span>, <span class="string">'xyz'</span>, <span class="string">'zara'</span>, <span class="string">'abc'</span>)</span><br><span class="line"><span class="comment">#</span></span><br><span class="line">print(len(test1))  <span class="comment"># 长度</span></span><br><span class="line">print(max(test1))  <span class="comment"># 最大值 最小值min</span></span><br><span class="line">print(list(aTuple))  <span class="comment"># tuple转list</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">test1.append(<span class="number">7</span>)  <span class="comment"># 在列表末尾添加新的对象</span></span><br><span class="line">test1.count(<span class="number">1</span>)  <span class="comment"># 统计出现次数</span></span><br><span class="line">test1.extend(list(aTuple))  <span class="comment"># 在列表末尾一次性追加另一个序列中的多个值（用新列表扩展原来的列表）</span></span><br><span class="line">test1.index(<span class="number">4</span>)  <span class="comment"># 从列表中找出某个值第一个匹配项的索引位置</span></span><br><span class="line">test1.insert(<span class="number">4</span>, <span class="number">4</span>)  <span class="comment"># 将对象插入列表</span></span><br><span class="line">test1.pop()  <span class="comment"># 移除列表中的一个元素（默认最后一个元素），并且返回该元素的值</span></span><br><span class="line">test1.remove(<span class="number">1</span>)  <span class="comment"># 移除列表中某个值的第一个匹配项</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">print(test1)</span><br><span class="line">test1.reverse()</span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># test1.sort()对原列表进行排序</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="Tuple特性与List相似-但不能更新"><a href="#Tuple特性与List相似-但不能更新" class="headerlink" title="Tuple特性与List相似 但不能更新"></a>Tuple特性与List相似 但不能更新</h3><h3 id="Python-字典-Dictionary"><a href="#Python-字典-Dictionary" class="headerlink" title="Python 字典(Dictionary)"></a>Python 字典(Dictionary)</h3><p>字典是另一种可变容器模型，且可存储任意类型对象，如其他容器模型。<br>字典由键和对应值成对组成。字典也被称作关联数组或哈希表。基本语法如下：</p>
+<ol>
+<li><p>访问字典里的值</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mydict = &#123;<span class="string">'Name'</span>: <span class="string">'Zara'</span>, <span class="string">'Age'</span>: <span class="number">7</span>, <span class="string">'Class'</span>: <span class="string">'First'</span>&#125;;</span><br><span class="line">print(<span class="string">"dict['Name']: "</span>, mydict[<span class="string">'Name'</span>])</span><br><span class="line">print(<span class="string">"dict['Age']: "</span>, mydict[<span class="string">'Age'</span>])</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改字典</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mydict[<span class="string">'Age'</span>] = <span class="number">8</span>  <span class="comment"># update existing entry</span></span><br><span class="line">mydict[<span class="string">'School'</span>] = <span class="string">"DPS School"</span>  <span class="comment"># Add new entry</span></span><br><span class="line">print(<span class="string">'mydic:'</span>, mydict)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>删除字典元素<br>字典值可以没有限制地取任何python对象，既可以是标准的对象，也可以是用户定义的，但键不行</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">del</span> mydict[<span class="string">'Name'</span>]  <span class="comment"># 删除键是'Name'的条目</span></span><br><span class="line">mydict.clear()  <span class="comment"># 清空词典所有条目</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>字典内置函数&amp;方法<br><a href="http://www.runoob.com/python/python-dictionary.html" target="_blank" rel="noopener">详情戳这</a></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">dict1 = &#123;<span class="string">'Name'</span>: <span class="string">'Zara'</span>, <span class="string">'Age'</span>: <span class="number">7</span>&#125;</span><br><span class="line">dict2 = &#123;<span class="string">'Name'</span>: <span class="string">'Mahnaz'</span>, <span class="string">'Age'</span>: <span class="number">27</span>&#125;</span><br><span class="line">print(len(dict1))  <span class="comment"># 计算字典元素个数，即键的总数。</span></span><br><span class="line">print(str(dict2))  <span class="comment"># 输出字典可打印的字符串表示</span></span><br><span class="line">print(type(dict1))  <span class="comment"># 返回输入的变量类型，如果变量是字典就返回字典类型。</span></span><br><span class="line">dict3 = dict1.copy()  <span class="comment"># 返回一个字典的浅复制</span></span><br><span class="line">dict1.clear()  <span class="comment"># 删除所有元素</span></span><br><span class="line">print(dict3.get(<span class="string">'Name'</span>, <span class="string">'defalut = None'</span>))  <span class="comment"># 返回指定键的值，如果值不在字典中返回default值</span></span><br><span class="line">print(dict3.keys())</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/python/" rel="tag"># python</a>
+          
+            <a href="/tags/基础语法/" rel="tag"># 基础语法</a>
+          
+            <a href="/tags/集合/" rel="tag"># 集合</a>
+          
+            <a href="/tags/字符串/" rel="tag"># 字符串</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/04/27/python-basic-grammar/" rel="next" title="Python基础语法—基础数据类型">
+                <i class="fa fa-chevron-left"></i> Python基础语法—基础数据类型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/04/27/large-website-architecture-notes-1/" rel="prev" title="大型网站技术架构读书笔记--概述">
+                大型网站技术架构读书笔记--概述 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+          
+            <img class="site-author-image" itemprop="image" src="/images/avatar.jpg" alt="Tracy. Zhao">
+          
+            <p class="site-author-name" itemprop="name">Tracy. Zhao</p>
+            <p class="site-description motion-element" itemprop="description">Just Do It.</p>
+        </div>
+
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+            
+              <a href="/archives/">
+            
+                <span class="site-state-item-count">25</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">22</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/chenxi-zhao" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                    
+                      GitHub
+                    
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="mailto:chenxi.zhao@foxmail.com" target="_blank" title="E-Mail">
+                  
+                    <i class="fa fa-fw fa-envelope"></i>
+                  
+                    
+                      E-Mail
+                    
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Python字符串"><span class="nav-number">1.</span> <span class="nav-text">Python字符串</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Python字符串更新"><span class="nav-number">1.1.</span> <span class="nav-text">Python字符串更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python转义字符"><span class="nav-number">1.2.</span> <span class="nav-text">Python转义字符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python字符串运算符"><span class="nav-number">1.3.</span> <span class="nav-text">Python字符串运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python字符串格式化"><span class="nav-number">1.4.</span> <span class="nav-text">Python字符串格式化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python三引号（triple-quotes）"><span class="nav-number">1.5.</span> <span class="nav-text">Python三引号（triple quotes）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python字符串函数"><span class="nav-number">1.6.</span> <span class="nav-text">Python字符串函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Python逻辑语句"><span class="nav-number">2.</span> <span class="nav-text">Python逻辑语句</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Python条件语句"><span class="nav-number">2.1.</span> <span class="nav-text">Python条件语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python循环语句"><span class="nav-number">2.2.</span> <span class="nav-text">Python循环语句</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#while循环"><span class="nav-number">2.2.1.</span> <span class="nav-text">while循环</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#For循环"><span class="nav-number">2.2.2.</span> <span class="nav-text">For循环</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Python集合"><span class="nav-number">3.</span> <span class="nav-text">Python集合</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Python中的List"><span class="nav-number">3.1.</span> <span class="nav-text">Python中的List</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tuple特性与List相似-但不能更新"><span class="nav-number">3.2.</span> <span class="nav-text">Tuple特性与List相似 但不能更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python-字典-Dictionary"><span class="nav-number">3.3.</span> <span class="nav-text">Python 字典(Dictionary)</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">
+  
+  &copy;  2015 &mdash; 
+  <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Tracy. Zhao</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+  <span class="post-meta-divider">|</span>
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.2</div>
+
+
+        
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=55826029";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.2"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.2"></script>
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.4.js"></script>
+  <script>AV.initialize("obkxoQfi31WijODXy3MwriBh-gzGzoHsz", "2BQLkWgpuFY2MHunE9oKvN2U");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.bootcss.com/mathjax/2.7.1/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+
+
+  
+
+  
+
+</body>
+</html>
