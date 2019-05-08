@@ -127,7 +127,7 @@
 <meta property="og:site_name" content="tmachc&#39;s notes">
 <meta property="og:description" content="根据修改的数据类型，可以将JUC包中的原子操作类可以分为4类。 1.基本类型: AtomicInteger, AtomicLong, AtomicBoolean ;2.数组类型: AtomicIntegerArray, AtomicLongArray, AtomicReferenceArray ;3.引用类型: AtomicReference, AtomicStampedRerence, Atom">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-11-20T11:12:38.313Z">
+<meta property="og:updated_time" content="2019-05-08T03:18:00.402Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="J.U.C. 原子操作">
 <meta name="twitter:description" content="根据修改的数据类型，可以将JUC包中的原子操作类可以分为4类。 1.基本类型: AtomicInteger, AtomicLong, AtomicBoolean ;2.数组类型: AtomicIntegerArray, AtomicLongArray, AtomicReferenceArray ;3.引用类型: AtomicReference, AtomicStampedRerence, Atom">
@@ -435,7 +435,17 @@
 </blockquote>
 <p>乐观锁用到的机制主要就有CAS，Compare and Swap。</p>
 <p>CAS有3个操作数，内存值V，旧的预期值A，要修改的新值B。当且仅当预期值A和内存值V相同时，将内存值V修改为B，否则什么都不做。</p>
-<font color="red"><strong>非阻塞算法 （nonblocking algorithms）</strong></font><br>&gt;一个线程的失败或者挂起不应该影响其他线程的失败或挂起的算法。<br><br>现代的CPU提供了特殊的指令，可以自动更新共享数据，而且能够检测到其他线程的干扰，而compareAndSet() 就用这些代替了锁定。<br><br>拿出AtomicInteger来研究在没有锁的情况下是如何做到数据正确性的。<br><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> value;</span><br><span class="line"><span class="comment">//首先毫无以为，在没有锁的机制下可能需要借助volatile原语，保证线程间的数据是可见的（共享的）。</span></span><br><span class="line"><span class="comment">//这样才获取变量的值的时候才能直接读取。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//然后来看看++i是怎么做到的。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">incrementAndGet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">int</span> current = get();</span><br><span class="line">        <span class="keyword">int</span> next = current + <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> (compareAndSet(current, next))</span><br><span class="line">            <span class="keyword">return</span> next;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//在这里采用了CAS操作，每次从内存中读取数据然后将此数据和+1后的结果进行CAS操作，如果成功就返回结果，否则重试直到成功为止。</span></span><br><span class="line"><span class="comment">//而compareAndSet利用JNI来完成CPU指令的操作。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">compareAndSet</span><span class="params">(<span class="keyword">int</span> expect, <span class="keyword">int</span> update)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unsafe.compareAndSwapInt(<span class="keyword">this</span>, valueOffset, expect, update);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>整体的过程就是这样子的，利用CPU的CAS指令，同时借助JNI来完成Java的非阻塞算法。其它原子操作都是利用类似的特性完成的。<br><br>而整个J.U.C都是建立在CAS之上的，因此对于synchronized阻塞算法，J.U.C在性能上有了很大的提升。参考资料的文章中介绍了如果利用CAS构建非阻塞计数器、队列等数据结构。<br><br><font color="red">CAS看起来很爽，但是会导致“ABA问题”。</font>
+<font color="red"><strong>非阻塞算法 （nonblocking algorithms）</strong></font>
+
+<blockquote>
+<p>一个线程的失败或者挂起不应该影响其他线程的失败或挂起的算法。</p>
+</blockquote>
+<p>现代的CPU提供了特殊的指令，可以自动更新共享数据，而且能够检测到其他线程的干扰，而compareAndSet() 就用这些代替了锁定。</p>
+<p>拿出AtomicInteger来研究在没有锁的情况下是如何做到数据正确性的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> value;</span><br><span class="line"><span class="comment">//首先毫无以为，在没有锁的机制下可能需要借助volatile原语，保证线程间的数据是可见的（共享的）。</span></span><br><span class="line"><span class="comment">//这样才获取变量的值的时候才能直接读取。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//然后来看看++i是怎么做到的。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">incrementAndGet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">int</span> current = get();</span><br><span class="line">        <span class="keyword">int</span> next = current + <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> (compareAndSet(current, next))</span><br><span class="line">            <span class="keyword">return</span> next;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//在这里采用了CAS操作，每次从内存中读取数据然后将此数据和+1后的结果进行CAS操作，如果成功就返回结果，否则重试直到成功为止。</span></span><br><span class="line"><span class="comment">//而compareAndSet利用JNI来完成CPU指令的操作。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">compareAndSet</span><span class="params">(<span class="keyword">int</span> expect, <span class="keyword">int</span> update)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unsafe.compareAndSwapInt(<span class="keyword">this</span>, valueOffset, expect, update);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>整体的过程就是这样子的，利用CPU的CAS指令，同时借助JNI来完成Java的非阻塞算法。其它原子操作都是利用类似的特性完成的。</p>
+<p>而整个J.U.C都是建立在CAS之上的，因此对于synchronized阻塞算法，J.U.C在性能上有了很大的提升。参考资料的文章中介绍了如果利用CAS构建非阻塞计数器、队列等数据结构。</p>
+<font color="red">CAS看起来很爽，但是会导致“ABA问题”。</font>
 
 <p>CAS算法实现一个重要前提需要取出内存中某时刻的数据，而在下时刻比较并替换，那么在这个时间差类会导致数据的变化。</p>
 <blockquote>
@@ -585,7 +595,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">27</span>
+                <span class="site-state-item-count">26</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -667,7 +677,7 @@
         <div class="copyright">
   
   &copy;  2015 &mdash; 
-  <span itemprop="copyrightYear">2018</span>
+  <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

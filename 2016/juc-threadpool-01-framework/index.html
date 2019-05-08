@@ -128,9 +128,9 @@
 <meta property="og:description" content="Java里面线程池的顶级接口是Executor，但是严格意义上讲Executor并不是一个线程池，而只是一个执行线程的工具。真正的线程池接口是ExecutorService。 下面这张图完整描述了线程池的类体系结构。">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://static.tmaczhao.cn/images/java_multi_thread/Executor-class_thumb.png">
-<meta property="og:image" content="https://images.cnitblog.com/blog/497634/201401/08000847-0a9caed4d6914485b2f56048c668251a.jpg">
+<meta property="og:image" content="https://static.tmaczhao.cn/notes/20190508112135.png">
 <meta property="og:image" content="https://static.tmaczhao.cn/images/java_multi_thread/ExecutorService-LifeCycle_thumb.png">
-<meta property="og:updated_time" content="2018-11-20T11:15:05.259Z">
+<meta property="og:updated_time" content="2019-05-08T03:21:46.550Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="J.U.C.线程池 - 框架">
 <meta name="twitter:description" content="Java里面线程池的顶级接口是Executor，但是严格意义上讲Executor并不是一个线程池，而只是一个执行线程的工具。真正的线程池接口是ExecutorService。 下面这张图完整描述了线程池的类体系结构。">
@@ -414,7 +414,7 @@
 <p>这里需要稍微提一下的是CompletionService接口，它是用于描述顺序获取执行结果的一个线程池包装器。它依赖一个具体的线程池调度，但是能够根据任务的执行先后顺序得到执行结果，这在某些情况下可能提高并发效率。</p>
 <h4 id="Executors"><a href="#Executors" class="headerlink" title="Executors"></a>Executors</h4><p>Executors是个静态工厂类。它通过静态工厂方法返回ExecutorService、ScheduledExecutorService、ThreadFactory和Callable等类的对象。</p>
 <p>newSingleThreadExecutor：创建一个单线程的线程池。这个线程池只有一个线程在工作，也就是相当于单线程串行执行所有任务。如果这个唯一的线程因为异常结束，那么会有一个新的线程来替代它。此线程池保证所有任务的执行顺序按照任务的提交顺序执行。<br>newFixedThreadPool：创建固定大小的线程池。每次提交一个任务就创建一个线程，直到线程达到线程池的最大大小。线程池的大小一旦达到最大值就会保持不变，如果某个线程因为执行异常而结束，那么线程池会补充一个新线程。<br>newCachedThreadPool：创建一个可缓存的线程池。如果线程池的大小超过了处理任务所需要的线程，那么就会回收部分空闲（60秒不执行任务）的线程，当任务数增加时，此线程池又可以智能的添加新线程来处理任务。此线程池不会对线程池大小做限制，线程池大小完全依赖于操作系统（或者说JVM）能够创建的最大线程大小。<br>newScheduledThreadPool：创建一个大小无限的线程池。此线程池支持定时以及周期性执行任务的需求。<br>newSingleThreadScheduledExecutor：创建一个单线程的线程池。此线程池支持定时以及周期性执行任务的需求。</p>
-<h3 id="线程池生命周期"><a href="#线程池生命周期" class="headerlink" title="线程池生命周期"></a>线程池生命周期</h3><h4 id="线程池的四种状态"><a href="#线程池的四种状态" class="headerlink" title="线程池的四种状态"></a>线程池的四种状态</h4><p><img src="https://images.cnitblog.com/blog/497634/201401/08000847-0a9caed4d6914485b2f56048c668251a.jpg" alt=""></p>
+<h3 id="线程池生命周期"><a href="#线程池生命周期" class="headerlink" title="线程池生命周期"></a>线程池生命周期</h3><h4 id="线程池的四种状态"><a href="#线程池的四种状态" class="headerlink" title="线程池的四种状态"></a>线程池的四种状态</h4><p><img src="https://static.tmaczhao.cn/notes/20190508112135.png" alt=""></p>
 <ol>
 <li>RUNNING</li>
 </ol>
@@ -604,7 +604,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">27</span>
+                <span class="site-state-item-count">26</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -686,7 +686,7 @@
         <div class="copyright">
   
   &copy;  2015 &mdash; 
-  <span itemprop="copyrightYear">2018</span>
+  <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

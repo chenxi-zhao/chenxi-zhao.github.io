@@ -127,12 +127,12 @@
 <meta property="og:site_name" content="tmachc&#39;s notes">
 <meta property="og:description" content="进程状态转换就绪等待CPU资源，阻塞等待CPU之外的资源，如I/O 进程和线程 进程是资源分配的单位，线程是CPU调度基本单位，进程有独立的内存空间，线程没有，但是线程有寄存器，独立的栈，程序计数器等）  一个进程可以包含多个线程，进程不能直接访问另一进程的变量和数据结构，必须通过进程通信，同一进程的多个线程可以共享部分进程内存">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg">
-<meta property="og:updated_time" content="2018-11-21T02:56:48.019Z">
+<meta property="og:image" content="http://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg">
+<meta property="og:updated_time" content="2019-05-08T02:29:39.458Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="操作系统知识点概述">
 <meta name="twitter:description" content="进程状态转换就绪等待CPU资源，阻塞等待CPU之外的资源，如I/O 进程和线程 进程是资源分配的单位，线程是CPU调度基本单位，进程有独立的内存空间，线程没有，但是线程有寄存器，独立的栈，程序计数器等）  一个进程可以包含多个线程，进程不能直接访问另一进程的变量和数据结构，必须通过进程通信，同一进程的多个线程可以共享部分进程内存">
-<meta name="twitter:image" content="https://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg">
+<meta name="twitter:image" content="http://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg">
 
 
 
@@ -395,13 +395,13 @@
       
 
       
-        <h3 id="进程状态转换"><a href="#进程状态转换" class="headerlink" title="进程状态转换"></a>进程状态转换</h3><p><img src="https://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg" alt=""><br>就绪等待CPU资源，阻塞等待CPU之外的资源，如I/O</p>
+        <h3 id="进程状态转换"><a href="#进程状态转换" class="headerlink" title="进程状态转换"></a>进程状态转换</h3><p><img src="http://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg" alt=""><br>就绪等待CPU资源，阻塞等待CPU之外的资源，如I/O</p>
 <h3 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a>进程和线程</h3><blockquote>
 <p>进程是资源分配的单位，线程是CPU调度基本单位，进程有独立的内存空间，线程没有，但是线程有寄存器，独立的栈，程序计数器等）</p>
 </blockquote>
 <p>一个进程可以包含多个线程，进程不能直接访问另一进程的变量和数据结构，必须通过进程通信，<font color="red">同一进程的多个线程可以共享部分进程内存</font></p>
 <a id="more"></a>
-<h3 id="进程通信方式"><a href="#进程通信方式" class="headerlink" title="进程通信方式"></a>进程通信方式</h3><font color="red">管道(Pipe)</font>及有名管道(Named Pipe)—-无格式字节流、缓冲区大小受限<br><font color="red">报文（Message）队列（消息队列）</font>—消息链接表（Posix及System V消息队列）克服了管道的不足，有足够权限向队列写入消息，被赋予读权限的进程读走队列消息<br><font color="red">信号（signal）</font>–通知进程有事情发生共享内存–最快，与其它通信机制，如信号量结合使用，来达到进程间的同步及互斥。<br><font color="red">信号量（semaphore）</font>–主要作为进程间以及同一进程不同线程之间的同步手段<br><font color="red">套接字（Socket）</font>–可以用于不同机器的进程通信<br><br>###  线程同步的几种方式<br>&gt;<font color="red">临界区（Critical Section）、互斥量（Mutex）、信号量（Semaphore）、事件（Event）</font><br>临界区–通过对多线程的串行化来访问公共资源或一段代码，只能一个线程访问，其他线程被挂起，等待释放在抢占<br>互斥量–互斥对象，加锁<br>信号量–同一时刻允许多线程访问访问， 但限制最大数目，其他线程等待<br>事件–通知操作保持同步，方便多线程的优先级比较<br><br>###  线程实现方式<br>&gt; 用户线程（User-Level Thread）和内核线程（Kernel-Level Thread，轻量级进程）<br><br>1） 用户线程是不需要内核支持在用户程序中实现的线程，应用进程利用线程库提供创建、同步、调度和管理线程的函数来控制用户线程。速度快，不需要用户态/核心态切换。处理器时间片以进程为单位分配，线程时间相对减少。<br>2）内核线程：由操作系统内核创建和撤销。内核维护进程及线程的上下文信息以及线程切换。一个内核线程由于I/O操作而阻塞，不会影响其它线程的运行。<br><font color="red">用户级线程的程序实体是运行在用户态下的程序，而内核支持线程的程序实体则是可以运行在任何状态下的程序。</font>
+<h3 id="进程通信方式"><a href="#进程通信方式" class="headerlink" title="进程通信方式"></a>进程通信方式</h3><font color="red">管道(Pipe)</font>及有名管道(Named Pipe)—-无格式字节流、缓冲区大小受限<br><font color="red">报文（Message）队列（消息队列）</font>—消息链接表（Posix及System V消息队列）克服了管道的不足，有足够权限向队列写入消息，被赋予读权限的进程读走队列消息<br><font color="red">信号（signal）</font>–通知进程有事情发生共享内存–最快，与其它通信机制，如信号量结合使用，来达到进程间的同步及互斥。<br><font color="red">信号量（semaphore）</font>–主要作为进程间以及同一进程不同线程之间的同步手段<br><font color="red">套接字（Socket）</font>–可以用于不同机器的进程通信<br><br>###  线程同步的几种方式<br>&gt;<font color="red">临界区（Critical Section）、互斥量（Mutex）、信号量（Semaphore）、事件（Event）</font><br>临界区–通过对多线程的串行化来访问公共资源或一段代码，只能一个线程访问，其他线程被挂起，等待释放在抢占<br>互斥量–互斥对象，加锁<br>信号量–同一时刻允许多线程访问访问， 但限制最大数目，其他线程等待<br>事件–通知操作保持同步，方便多线程的优先级比较<br><br><br>###  线程实现方式<br>&gt;用户线程（User-Level Thread）和内核线程（Kernel-Level Thread，轻量级进程）<br><br>1） 用户线程是不需要内核支持在用户程序中实现的线程，应用进程利用线程库提供创建、同步、调度和管理线程的函数来控制用户线程。速度快，不需要用户态/核心态切换。处理器时间片以进程为单位分配，线程时间相对减少。<br>2）内核线程：由操作系统内核创建和撤销。内核维护进程及线程的上下文信息以及线程切换。一个内核线程由于I/O操作而阻塞，不会影响其它线程的运行。<br><font color="red">用户级线程的程序实体是运行在用户态下的程序，而内核支持线程的程序实体则是可以运行在任何状态下的程序。</font>
 
 <h3 id="用户态和内核态"><a href="#用户态和内核态" class="headerlink" title="用户态和内核态"></a>用户态和内核态</h3><p>在讲述用户态和核心态的区别之前，我们先要说说“特权级”的概念。</p>
 <blockquote>
@@ -579,7 +579,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">27</span>
+                <span class="site-state-item-count">26</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -661,7 +661,7 @@
         <div class="copyright">
   
   &copy;  2015 &mdash; 
-  <span itemprop="copyrightYear">2018</span>
+  <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
