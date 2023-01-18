@@ -28,7 +28,7 @@
 <meta property="og:description" content="高可用的网站架构实现高可用架构的主要手段是数据和服务的冗余备份以及失效转移，一旦某些服务器宕机，就将服务切换到其他可用的服务器上，如果磁盘损坏，则从备用的磁盘中读取数据。 典型的网站架构主要分为三层：应用层，服务层，数据层。  以百度为例：应用层主要部署了文库、贴吧、百科等产品服务服务层主要部署了登录、百度账户等百度的通用可复用的服务数据层主要部署了文件、数据库、缓存、搜索等数据服务">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2016-05-31T09:21:03.000Z">
-<meta property="article:modified_time" content="2023-01-17T10:46:42.059Z">
+<meta property="article:modified_time" content="2023-01-18T04:23:59.880Z">
 <meta property="article:author" content="tmachc">
 <meta property="article:tag" content="架构">
 <meta property="article:tag" content="笔记">
@@ -193,7 +193,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-01-17 18:46:42" itemprop="dateModified" datetime="2023-01-17T18:46:42+08:00">2023-01-17</time>
+                <time title="修改时间：2023-01-18 12:23:59" itemprop="dateModified" datetime="2023-01-18T12:23:59+08:00">2023-01-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -256,7 +256,7 @@
 </li>
 <li><p>异步调用<br>应用对服务的调用通过消息队列等异步方式，避免一个服务失败导致整个应用请求失败的情况，但需要注意使用场景</p>
 </li>
-<li><p>服务降级<br>大并发导致性能下降，服务降级的两种手段**<code>拒绝服务</code><strong>和</strong><code>关闭服务</code>**。<br>**<code>拒绝服务</code>**： 拒绝低优先级的服务调用，确保核心应用正常或随机拒绝部分请求<br>**<code>关闭服务</code>**： 关闭部分不重要的服务以节约内存开销</p>
+<li><p>服务降级<br>大并发导致性能下降，服务降级的两种手段 <strong><code>拒绝服务</code></strong> 和 **<code>关闭服务</code>**。<br>**<code>拒绝服务</code>**： 拒绝低优先级的服务调用，确保核心应用正常或随机拒绝部分请求<br>**<code>关闭服务</code>**： 关闭部分不重要的服务以节约内存开销</p>
 </li>
 <li><p>幂等性设置<br>保证服务重复调用和一次调用的一致性，避免因虚假失败（执行成功但是无响应）而产生的重复调用（比如转账）产生严重后果</p>
 </li>
