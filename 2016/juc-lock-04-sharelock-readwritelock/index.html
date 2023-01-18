@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Monda:300,300italic,400,400italic,700,700italic|Lobster Two:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="JUC中的共享锁有CountDownLatch, CyclicBarrier, Semaphore, ReentrantReadWriteLock等ReadWriteLock是读写锁。它维护了一对相关的锁-“读取锁”和“写入锁”，一个用于读取操作，另一个用于写入操作。  “读取锁”用于只读操作，它是“共享锁”，能同时被多个线程获取。 “写入锁”用于写入操作，它是“独占锁”，写入锁只能被一个线程锁获">
+<meta property="og:type" content="article">
+<meta property="og:title" content="J.U.C.锁机制 - 共享锁 &amp; 读写锁">
+<meta property="og:url" content="http://example.com/2016/juc-lock-04-sharelock-readwritelock/index.html">
+<meta property="og:site_name" content="tmachc&#39;s notes">
+<meta property="og:description" content="JUC中的共享锁有CountDownLatch, CyclicBarrier, Semaphore, ReentrantReadWriteLock等ReadWriteLock是读写锁。它维护了一对相关的锁-“读取锁”和“写入锁”，一个用于读取操作，另一个用于写入操作。  “读取锁”用于只读操作，它是“共享锁”，能同时被多个线程获取。 “写入锁”用于写入操作，它是“独占锁”，写入锁只能被一个线程锁获">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static.tmaczhao.cn/images/5655a50f8ef3986bb52ded1bab729276.jpg">
+<meta property="article:published_time" content="2016-05-10T02:46:30.000Z">
+<meta property="article:modified_time" content="2023-01-17T10:46:42.059Z">
+<meta property="article:author" content="tmachc">
+<meta property="article:tag" content="java">
+<meta property="article:tag" content="多线程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static.tmaczhao.cn/images/5655a50f8ef3986bb52ded1bab729276.jpg">
+
+<link rel="canonical" href="http://example.com/2016/juc-lock-04-sharelock-readwritelock/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>J.U.C.锁机制 - 共享锁 & 读写锁 | tmachc's notes</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">tmachc's notes</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Stay Hungry, Stay Foolish.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/juc-lock-04-sharelock-readwritelock/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="tmachc">
+      <meta itemprop="description" content="Just Do It.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tmachc's notes">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          J.U.C.锁机制 - 共享锁 & 读写锁
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-05-10 10:46:30" itemprop="dateCreated datePublished" datetime="2016-05-10T10:46:30+08:00">2016-05-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-01-17 18:46:42" itemprop="dateModified" datetime="2023-01-17T18:46:42+08:00">2023-01-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java-multi-thread/" itemprop="url" rel="index"><span itemprop="name">java-multi-thread</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>JUC中的共享锁有CountDownLatch, CyclicBarrier, Semaphore, ReentrantReadWriteLock等<br>ReadWriteLock是读写锁。它维护了一对相关的锁-“读取锁”和“写入锁”，一个用于读取操作，另一个用于写入操作。</p>
+<ul>
+<li>“读取锁”用于只读操作，它是“共享锁”，能同时被多个线程获取。</li>
+<li>“写入锁”用于写入操作，它是“独占锁”，写入锁只能被一个线程锁获取。<br>注意：不能同时存在读取锁和写入锁！<br>ReadWriteLock是一个接口。ReentrantReadWriteLock是它的实现类，<br><strong>ReentrantReadWriteLock包括子类ReadLock和WriteLock。</strong></li>
+</ul>
+<span id="more"></span>
+
+<h3 id="ReadWriteLock函数列表"><a href="#ReadWriteLock函数列表" class="headerlink" title="ReadWriteLock函数列表"></a>ReadWriteLock函数列表</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 返回用于读取操作的锁。</span></span><br><span class="line">Lock <span class="title function_">readLock</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回用于写入操作的锁。</span></span><br><span class="line">Lock <span class="title function_">writeLock</span><span class="params">()</span></span><br></pre></td></tr></table></figure>
+<h3 id="ReentrantReadWriteLock函数列表"><a href="#ReentrantReadWriteLock函数列表" class="headerlink" title="ReentrantReadWriteLock函数列表"></a>ReentrantReadWriteLock函数列表</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建一个新的ReentrantReadWriteLock，默认是采用“非公平策略”。</span></span><br><span class="line">ReentrantReadWriteLock()</span><br><span class="line"><span class="comment">// 创建一个新的ReentrantReadWriteLock，fair是“公平策略”。fair为true，意味着公平策略；否则，意味着非公平策略。</span></span><br><span class="line">ReentrantReadWriteLock(<span class="type">boolean</span> fair)</span><br><span class="line"><span class="comment">// 返回当前拥有写入锁的线程，如果没有这样的线程，则返回null。</span></span><br><span class="line"><span class="keyword">protected</span> Thread <span class="title function_">getOwner</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回一个collection，它包含可能正在等待获取读取锁的线程。</span></span><br><span class="line"><span class="keyword">protected</span> Collection&lt;Thread&gt; <span class="title function_">getQueuedReaderThreads</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回一个collection，它包含可能正在等待获取读取或写入锁的线程。</span></span><br><span class="line"><span class="keyword">protected</span> Collection&lt;Thread&gt; <span class="title function_">getQueuedThreads</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回一个collection，它包含可能正在等待获取写入锁的线程。</span></span><br><span class="line"><span class="keyword">protected</span> Collection&lt;Thread&gt; <span class="title function_">getQueuedWriterThreads</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回等待获取读取或写入锁的线程估计数目。</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getQueueLength</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 查询当前线程在此锁上保持的重入读取锁数量。</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getReadHoldCount</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 查询为此锁保持的读取锁数量。</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getReadLockCount</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回一个collection，它包含可能正在等待与写入锁相关的给定条件的那些线程。</span></span><br><span class="line"><span class="keyword">protected</span> Collection&lt;Thread&gt; <span class="title function_">getWaitingThreads</span><span class="params">(Condition condition)</span></span><br><span class="line"><span class="comment">// 返回正等待与写入锁相关的给定条件的线程估计数目。</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getWaitQueueLength</span><span class="params">(Condition condition)</span></span><br><span class="line"><span class="comment">// 查询当前线程在此锁上保持的重入写入锁数量。</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getWriteHoldCount</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 查询是否给定线程正在等待获取读取或写入锁。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">hasQueuedThread</span><span class="params">(Thread thread)</span></span><br><span class="line"><span class="comment">// 查询是否所有的线程正在等待获取读取或写入锁。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">hasQueuedThreads</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 查询是否有些线程正在等待与写入锁有关的给定条件。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">hasWaiters</span><span class="params">(Condition condition)</span></span><br><span class="line"><span class="comment">// 如果此锁将公平性设置为ture，则返回true。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">isFair</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 查询是否某个线程保持了写入锁。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">isWriteLocked</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 查询当前线程是否保持了写入锁。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">isWriteLockedByCurrentThread</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回用于读取操作的锁。</span></span><br><span class="line">ReentrantReadWriteLock.ReadLock <span class="title function_">readLock</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 返回用于写入操作的锁。</span></span><br><span class="line">ReentrantReadWriteLock.WriteLock <span class="title function_">writeLock</span><span class="params">()</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="ReentrantReadWriteLock数据结构"><a href="#ReentrantReadWriteLock数据结构" class="headerlink" title="ReentrantReadWriteLock数据结构"></a>ReentrantReadWriteLock数据结构</h3><p>ReentrantReadWriteLock的UML类图如下：<br><img src="https://static.tmaczhao.cn/images/5655a50f8ef3986bb52ded1bab729276.jpg"><br>从中可以看出：</p>
+<ol>
+<li>ReentrantReadWriteLock实现了ReadWriteLock接口。ReadWriteLock是一个读写锁的接口，提供了”获取读锁的readLock()函数” 和 “获取写锁的writeLock()函数”。</li>
+<li>ReentrantReadWriteLock中包含：<strong>sync对象</strong>，<strong>读锁readerLock</strong>和<strong>写锁writerLock</strong>。读锁ReadLock和写锁WriteLock都实现了Lock接口。读锁ReadLock和写锁WriteLock中也都分别包含了”Sync对象”，它们的Sync对象和ReentrantReadWriteLock的Sync对象是一样的，就是通过sync，读锁和写锁实现了对同一个对象的访问。</li>
+<li>和”ReentrantLock”一样，sync是Sync类型；而且，Sync也是一个继承于AQS的抽象类。Sync也包括”公平锁”FairSync和”非公平锁”NonfairSync。sync对象是”FairSync”和”NonfairSync”中的一个，默认是”NonfairSync”。</li>
+</ol>
+<h3 id="ReadLock-x2F-WriteLock"><a href="#ReadLock-x2F-WriteLock" class="headerlink" title="ReadLock&#x2F;WriteLock"></a>ReadLock&#x2F;WriteLock</h3><p>WriteLock就是一个独占锁，这和ReentrantLock里面的实现几乎相同，都是使用了AQS的acquire&#x2F;release操作。当然了在内部处理方式上与ReentrantLock还是有一点不同的。<br>之前介绍到AQS中有一个state字段（int类型，32位）用来描述有多少线程获持有锁。在独占锁的时代这个值通常是0或者1（如果是重入的就是重入的次数），在共享锁的时代就是持有锁的数量。<br>ReadWriteLock的读、写锁是相关但是又不一致的，所以需要两个数来描述读锁（共享锁）和写锁（独占锁）的数量。显然现在一个state就不够用了。于是在ReentrantReadWrilteLock里面将这个字段一分为二，高位16位表示共享锁的数量，低位16位表示独占锁的数量（或者重入数量）。2^16-1&#x3D;65536，这就是上节中提到的为什么共享锁和独占锁的数量最大只能是65535的原因了。</p>
+<h4 id="WriteLock"><a href="#WriteLock" class="headerlink" title="WriteLock"></a>WriteLock</h4><p>写入锁获取处理流程与独占锁类似，需要注意的是写入锁数量需要做特殊处理</p>
+<blockquote>
+<p>这里有一段逻辑是当前写线程是否需要阻塞writerShouldBlock(current)。对于非公平锁而言总是不阻塞当前线程，而对于公平锁而言如果AQS队列不为空或者当前线程不是在AQS的队列头那么就阻塞线程，直到队列前面的线程处理完锁逻辑。</p>
+</blockquote>
+<p>写入锁释放时其实就是检测下剩下的写入锁数量，如果是0就将独占锁线程清空（意味着没有线程获取锁），否则就是说当前是重入锁的一次释放，所以不能将独占锁线程清空。然后将剩余线程状态数写回AQS。</p>
+<h4 id="ReadLock"><a href="#ReadLock" class="headerlink" title="ReadLock"></a>ReadLock</h4><p>读取锁获取锁时首先得到**<code>写入锁数量</code>**，如果不为0，返回-1，然后获取读取锁数量，如果“不需要阻塞等待”并且“读取锁的共享计数小于MAX_COUNT”，则直接通过CAS函数更新“读取锁的共享计数”，以及将“当前线程获取读取锁的次数+1”。如果CAS修改失败，会通过调用fullTryAcquireShared()方法循环执行一直到CAS计数成功或者被写入线程占有锁。</p>
+<p>当上述方法中返回-1时会调用doAcquireShared()的作用是获取共享锁。</p>
+<ul>
+<li>它会首先创建线程对应的CLH队列的节点，然后将该节点添加到CLH队列中。</li>
+<li>如果“当前线程”是CLH队列的表头，则尝试获取共享锁；否则，则需要通过shouldParkAfterFailedAcquire()判断是否阻塞等待，需要的话，则通过parkAndCheckInterrupt()进行阻塞等待。</li>
+<li>doAcquireShared()会通过for循环，不断的进行上面的操作；目的就是获取共享锁。需要注意的是：doAcquireShared()在每一次尝试获取锁时，是通过tryAcquireShared()来执行的！</li>
+</ul>
+<blockquote>
+<p>ReadLock公平锁和非公平锁性通过是否被阻塞方法readerShouldBlock()方法来实现<br>公平共享锁中，如果在当前线程的前面有其他线程在等待获取共享锁，则返回true；否则，返回false。<br>非公平共享锁中，无视当前线程的前面是否有其他线程在等待获取共享锁。只要该共享锁对应的线程为null，则返回false。</p>
+</blockquote>
+<h3 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.concurrent.locks.ReadWriteLock;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.locks.ReentrantReadWriteLock;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ReadWriteLockTest1</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建账户</span></span><br><span class="line">        <span class="type">MyCount</span> <span class="variable">myCount</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyCount</span>(<span class="string">&quot;4238920615242830&quot;</span>, <span class="number">10000</span>);</span><br><span class="line">        <span class="comment">// 创建用户，并指定账户</span></span><br><span class="line">        <span class="type">User</span> <span class="variable">user</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">User</span>(<span class="string">&quot;Tommy&quot;</span>, myCount);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 分别启动3个“读取账户金钱”的线程和3个“设置账户金钱”的线程</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">3</span>; i++) &#123;</span><br><span class="line">            user.getCash();</span><br><span class="line">            user.setCash((i+<span class="number">1</span>)*<span class="number">1000</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">User</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String name;            <span class="comment">//用户名</span></span><br><span class="line">    <span class="keyword">private</span> MyCount myCount;        <span class="comment">//所要操作的账户</span></span><br><span class="line">    <span class="keyword">private</span> ReadWriteLock myLock;   <span class="comment">//执行操作所需的锁对象</span></span><br><span class="line"></span><br><span class="line">    User(String name, MyCount myCount) &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.myCount = myCount;</span><br><span class="line">        <span class="built_in">this</span>.myLock = <span class="keyword">new</span> <span class="title class_">ReentrantReadWriteLock</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getCash</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>() &#123;</span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                myLock.readLock().lock();</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() +<span class="string">&quot; getCash start&quot;</span>);</span><br><span class="line">                    myCount.getCash();</span><br><span class="line">                    Thread.sleep(<span class="number">1</span>);</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() +<span class="string">&quot; getCash end&quot;</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                    myLock.readLock().unlock();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;.start();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setCash</span><span class="params">(<span class="keyword">final</span> <span class="type">int</span> cash)</span> &#123;</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>() &#123;</span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                myLock.writeLock().lock();</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() +<span class="string">&quot; setCash start&quot;</span>);</span><br><span class="line">                    myCount.setCash(cash);</span><br><span class="line">                    Thread.sleep(<span class="number">1</span>);</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() +<span class="string">&quot; setCash end&quot;</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                    myLock.writeLock().unlock();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyCount</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String id;         <span class="comment">//账号</span></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>    cash;       <span class="comment">//账户余额</span></span><br><span class="line"></span><br><span class="line">    MyCount(String id, <span class="type">int</span> cash) &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = id;</span><br><span class="line">        <span class="built_in">this</span>.cash = cash;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setId</span><span class="params">(String id)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">getCash</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(Thread.currentThread().getName() +<span class="string">&quot; getCash cash=&quot;</span>+ cash);</span><br><span class="line">        <span class="keyword">return</span> cash;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setCash</span><span class="params">(<span class="type">int</span> cash)</span> &#123;</span><br><span class="line">        System.out.println(Thread.currentThread().getName() +<span class="string">&quot; setCash cash=&quot;</span>+ cash);</span><br><span class="line">        <span class="built_in">this</span>.cash = cash;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+              <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag"># 多线程</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/juc-lock-03-condition-locksupport/" rel="prev" title="J.U.C.锁机制 - Condition & LockSupport">
+      <i class="fa fa-chevron-left"></i> J.U.C.锁机制 - Condition & LockSupport
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/juc-lock-05-countdownlatch-semaphore/" rel="next" title="J.U.C.锁机制 - CountDownLatch & 信号量">
+      J.U.C.锁机制 - CountDownLatch & 信号量 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#ReadWriteLock%E5%87%BD%E6%95%B0%E5%88%97%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">ReadWriteLock函数列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ReentrantReadWriteLock%E5%87%BD%E6%95%B0%E5%88%97%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">ReentrantReadWriteLock函数列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ReentrantReadWriteLock%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">ReentrantReadWriteLock数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ReadLock-x2F-WriteLock"><span class="nav-number">4.</span> <span class="nav-text">ReadLock&#x2F;WriteLock</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#WriteLock"><span class="nav-number">4.1.</span> <span class="nav-text">WriteLock</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ReadLock"><span class="nav-number">4.2.</span> <span class="nav-text">ReadLock</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">5.</span> <span class="nav-text">示例代码</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="tmachc"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">tmachc</p>
+  <div class="site-description" itemprop="description">Just Do It.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chenxi-zhao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chenxi-zhao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chenxi.zhao@foxmail.com" title="E-Mail → mailto:chenxi.zhao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tmachc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">56k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:23</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

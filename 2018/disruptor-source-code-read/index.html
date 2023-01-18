@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Monda:300,300italic,400,400italic,700,700italic|Lobster Two:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="disruptor 结构">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Disruptor高性能无锁消息队列源码阅读">
+<meta property="og:url" content="http://example.com/2018/disruptor-source-code-read/index.html">
+<meta property="og:site_name" content="tmachc&#39;s notes">
+<meta property="og:description" content="disruptor 结构">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static.tmaczhao.cn/notes/disruptor/20181122143846.jpg">
+<meta property="og:image" content="http://static.tmaczhao.cn/images/180314/EKBHhjh9ic.png">
+<meta property="og:image" content="https://static.tmaczhao.cn/notes/disruptor/2018112214396.jpg">
+<meta property="og:image" content="http://static.tmaczhao.cn/images/180314/g72FkH5dfa.png">
+<meta property="og:image" content="http://static.tmaczhao.cn/images/180314/kI2D3GH0d6.png">
+<meta property="og:image" content="https://static.tmaczhao.cn/notes/disruptor/20181122153916.png">
+<meta property="og:image" content="http://static.tmaczhao.cn/images/180314/f3329eC4jf.png">
+<meta property="article:published_time" content="2018-11-22T07:40:39.000Z">
+<meta property="article:modified_time" content="2023-01-17T10:46:42.058Z">
+<meta property="article:author" content="tmachc">
+<meta property="article:tag" content="disruptor">
+<meta property="article:tag" content="消息队列">
+<meta property="article:tag" content="高性能">
+<meta property="article:tag" content="并发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static.tmaczhao.cn/notes/disruptor/20181122143846.jpg">
+
+<link rel="canonical" href="http://example.com/2018/disruptor-source-code-read/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Disruptor高性能无锁消息队列源码阅读 | tmachc's notes</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">tmachc's notes</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Stay Hungry, Stay Foolish.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/disruptor-source-code-read/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="tmachc">
+      <meta itemprop="description" content="Just Do It.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tmachc's notes">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Disruptor高性能无锁消息队列源码阅读
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-11-22 15:40:39" itemprop="dateCreated datePublished" datetime="2018-11-22T15:40:39+08:00">2018-11-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-01-17 18:46:42" itemprop="dateModified" datetime="2023-01-17T18:46:42+08:00">2023-01-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>13 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="disruptor-结构"><a href="#disruptor-结构" class="headerlink" title="disruptor 结构"></a>disruptor 结构</h3><p><img src="https://static.tmaczhao.cn/notes/disruptor/20181122143846.jpg" alt="disruptor"></p>
+<span id="more"></span>
+
+<h3 id="伪共享"><a href="#伪共享" class="headerlink" title="伪共享"></a>伪共享</h3><p><img src="http://static.tmaczhao.cn/images/180314/EKBHhjh9ic.png" alt="false sharing"></p>
+<p><code>value值始终独占一个缓存行，极限条件下为第一个或者最后一个元素，防止更新其他值时重刷导致性能下降</code></p>
+<p><img src="https://static.tmaczhao.cn/notes/disruptor/2018112214396.jpg" alt="false sharing"></p>
+<h3 id="Sequence-AtomicLong增强（缓存行填充）"><a href="#Sequence-AtomicLong增强（缓存行填充）" class="headerlink" title="Sequence - AtomicLong增强（缓存行填充）"></a>Sequence - AtomicLong增强（缓存行填充）</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Sequence</span> <span class="keyword">extends</span> <span class="title class_">RhsPadding</span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">INITIAL_VALUE</span> <span class="operator">=</span> -<span class="number">1L</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Unsafe UNSAFE;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> VALUE_OFFSET;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span>&#123;</span><br><span class="line">        UNSAFE = Util.getUnsafe();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            VALUE_OFFSET = UNSAFE.objectFieldOffset(Value.class.getDeclaredField(<span class="string">&quot;value&quot;</span>));</span><br><span class="line">        &#125;<span class="keyword">catch</span> (<span class="keyword">final</span> Exception e)&#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 默认初始value为-1</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Sequence</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="built_in">this</span>(INITIAL_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Sequence</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> initialValue)</span>&#123;</span><br><span class="line">        UNSAFE.putOrderedLong(<span class="built_in">this</span>, VALUE_OFFSET, initialValue);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">get</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 利用Unsafe更新value的地址内存上的值从而更新value的值</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">set</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> value)</span>&#123;</span><br><span class="line">        UNSAFE.putOrderedLong(<span class="built_in">this</span>, VALUE_OFFSET, value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 利用Unsafe原子更新value</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setVolatile</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> value)</span>&#123;</span><br><span class="line">        UNSAFE.putLongVolatile(<span class="built_in">this</span>, VALUE_OFFSET, value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 利用Unsafe CAS</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">compareAndSet</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> expectedValue, <span class="keyword">final</span> <span class="type">long</span> newValue)</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> UNSAFE.compareAndSwapLong(<span class="built_in">this</span>, VALUE_OFFSET, expectedValue, newValue);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">incrementAndGet</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> addAndGet(<span class="number">1L</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">addAndGet</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> increment)</span>&#123;</span><br><span class="line">        <span class="type">long</span> currentValue;</span><br><span class="line">        <span class="type">long</span> newValue;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// java1.8可以做进一步优化 UNSAFE.getAndAddLong-native fetch-and-add</span></span><br><span class="line">        <span class="keyword">do</span>&#123;</span><br><span class="line">            currentValue = get();</span><br><span class="line">            newValue = currentValue + increment;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> (!compareAndSet(currentValue, newValue));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> newValue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Long.toString(get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="Producer"><a href="#Producer" class="headerlink" title="Producer"></a>Producer</h3><p><img src="http://static.tmaczhao.cn/images/180314/g72FkH5dfa.png" alt="mark"></p>
+<h4 id="Cursored接口"><a href="#Cursored接口" class="headerlink" title="Cursored接口"></a>Cursored接口</h4><p>实现此接口的类，记录sequence位置的类。例如，生产者在生产消息时通过访问getCursor来定位当前ringBuffer下一个生产的位置，这个位置需要实时更新。</p>
+<h4 id="Sequenced接口"><a href="#Sequenced接口" class="headerlink" title="Sequenced接口"></a>Sequenced接口</h4><p>实现此接口类，实现一个有序的存储结构，也就是RingBuffer的一个特性。</p>
+<ul>
+<li>getBufferSize 获取ringBuffer的大小</li>
+<li>hasAvailableCapacity 判断空间是否足够</li>
+<li>remainingCapacity 获取ringBuffer的剩余空间</li>
+<li>next 申请下一个或者n个sequence(value)作为生产event的位置</li>
+<li>tryNext 尝试申请下一个或者n个sequence(value)作为生产event的位置，容量不足会抛出InsufficientCapacityException</li>
+<li>publish 发布Event</li>
+</ul>
+<h4 id="Sequencer接口"><a href="#Sequencer接口" class="headerlink" title="Sequencer接口"></a>Sequencer接口</h4><p>Sequencer接口，扩展了Cursored和Sequenced接口。在前两者的基础上，增加了消费与生产相关的方法。</p>
+<ul>
+<li>INITIAL_CURSOR_VALUE： -1 为 sequence的起始值</li>
+<li>claim： 申请一个特殊的Sequence，只有设定特殊起始值的ringBuffer时才会使用（一般是多个生产者时才会使用）</li>
+<li>isAvailable：非阻塞，验证一个sequence是否已经被published并且可以消费</li>
+<li>addGatingSequences：将这些sequence加入到需要跟踪处理的gatingSequences中</li>
+<li>removeGatingSequence：移除某个sequence</li>
+<li>newBarrier：给定一串需要跟踪的sequence，创建SequenceBarrier。SequenceBarrier是用来给多消费者确定消费位置是否可以消费用的</li>
+<li>getMinimumSequence：获取这个ringBuffer的gatingSequences中最小的一个sequence</li>
+<li>getHighestPublishedSequence：获取最高可以读取的Sequence</li>
+<li>newPoller：目前没用，不讲EventPoller相关的内容（没有用到）</li>
+</ul>
+<blockquote>
+<p><strong>GatingSequence</strong>：RingBuffer的头由一个名字为cursor的Sequence对象维护，用来协调生产者向RingBuffer中填充数据。表示队列尾的Sequence并没有在RingBuffer中，而是由消费者维护。这样的话，队列尾的维护就是无锁的。但是，在生产者方确定RingBuffer是否已满就需要跟踪更多信息。为此，GatingSequence用来跟踪相关Sequence。</p>
+</blockquote>
+<h4 id="AbstractSequencer"><a href="#AbstractSequencer" class="headerlink" title="AbstractSequencer"></a>AbstractSequencer</h4><p>AbstractSequencer实现了Sequencer接口，有五个Field：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原子更新下面的gatingSequences</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> AtomicReferenceFieldUpdater&lt;AbstractSequencer, Sequence[]&gt; SEQUENCE_UPDATER =AtomicReferenceFieldUpdater.newUpdater(AbstractSequencer.class, Sequence[].class, <span class="string">&quot;gatingSequences&quot;</span>);</span><br><span class="line"><span class="comment">// 记录生产目标RingBuffer大小，bufferSize在构造方法构造时必须大于1且为2的n次方</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="type">int</span> bufferSize;</span><br><span class="line"><span class="comment">// 该生产者的等待策略，当队列满了以后</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> WaitStrategy waitStrategy;</span><br><span class="line"><span class="comment">// 生产定位，即可以消费的Sequence，初始值为 INITIAL_CURSOR_VALUE：-1</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="type">Sequence</span> <span class="variable">cursor</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Sequence</span>(Sequencer.INITIAL_CURSOR_VALUE);</span><br><span class="line"><span class="comment">// 生产队列的队列头有RingBuffer维护，下面的对象用于维护消费者的队列尾</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">volatile</span> Sequence[] gatingSequences = <span class="keyword">new</span> <span class="title class_">Sequence</span>[<span class="number">0</span>];</span><br></pre></td></tr></table></figure>
+
+<p>该类实现了上面接口中的一些方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取当前生产者的定位</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">long</span> <span class="title function_">getCursor</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> cursor.get();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 拿到生产队列的大小</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">getBufferSize</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> bufferSize;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 原子添加Sequence到gatingSequences数组中</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">addGatingSequences</span><span class="params">(Sequence... gatingSequences)</span>&#123;</span><br><span class="line">    SequenceGroups.addSequences(<span class="built_in">this</span>, SEQUENCE_UPDATER, <span class="built_in">this</span>, gatingSequences);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 原子删除Sequence到gatingSequences数组中</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">removeGatingSequence</span><span class="params">(Sequence sequence)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> SequenceGroups.removeSequence(<span class="built_in">this</span>, SEQUENCE_UPDATER, sequence);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取到正在消费的最小的序列值，即消费的最小的Sequence value</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getMinimumSequence</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> Util.getMinimumSequence(gatingSequences, cursor.get());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 返回的是一个ProcessingSequenceBarrier，用来协调消费者消费的对象。</span></span><br><span class="line"><span class="comment"> * 例如消费者A依赖于消费者B，就是消费者A一定要后于消费者B消费，也就是A只能消费B消费过的，也就是A的sequence一定要小于B的。</span></span><br><span class="line"><span class="comment"> * 这个Sequence的协调，通过A和B设置在同一个SequenceBarrier上实现。同时，我们还要保证所有的消费者只能消费被Publish过的。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> SequenceBarrier <span class="title function_">newBarrier</span><span class="params">(Sequence... sequencesToTrack)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">ProcessingSequenceBarrier</span>(<span class="built_in">this</span>, waitStrategy, cursor, sequencesToTrack);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates an event poller for this sequence that will use the supplied data provider and</span></span><br><span class="line"><span class="comment"> * gating sequences.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> &lt;T&gt; EventPoller&lt;T&gt; <span class="title function_">newPoller</span><span class="params">(DataProvider&lt;T&gt; dataProvider, Sequence... gatingSequences)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> EventPoller.newInstance(dataProvider, <span class="built_in">this</span>, <span class="keyword">new</span> <span class="title class_">Sequence</span>(), cursor, gatingSequences);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="SingleProducerSequencer（线程不安全）"><a href="#SingleProducerSequencer（线程不安全）" class="headerlink" title="SingleProducerSequencer（线程不安全）"></a>SingleProducerSequencer（线程不安全）</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 下一个生产的位置， nextValue在next后更改，cursor在publish更改</span></span><br><span class="line"><span class="keyword">protected</span> <span class="type">long</span> <span class="variable">nextValue</span> <span class="operator">=</span> Sequence.INITIAL_VALUE;</span><br><span class="line"><span class="comment">// 缓存之前所有gatingSequences最小的那个，这样不用每次都遍历一遍gatingSequences，影响效率</span></span><br><span class="line"><span class="keyword">protected</span> <span class="type">long</span> <span class="variable">cachedValue</span> <span class="operator">=</span> Sequence.INITIAL_VALUE;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> Sequencer#hasAvailableCapacity(int)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">hasAvailableCapacity</span><span class="params">(<span class="type">int</span> requiredCapacity)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> hasAvailableCapacity(requiredCapacity, <span class="literal">false</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">hasAvailableCapacity</span><span class="params">(<span class="type">int</span> requiredCapacity, <span class="type">boolean</span> doStore)</span>&#123;</span><br><span class="line">    <span class="comment">// 下一个生产位置</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">nextValue</span> <span class="operator">=</span> <span class="built_in">this</span>.nextValue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 后退一圈拿到上一个同一位置，用于判断是否消费</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">wrapPoint</span> <span class="operator">=</span> (nextValue + requiredCapacity) - bufferSize;</span><br><span class="line">    <span class="comment">// 拿到缓存到的gatingSequences中最小的value</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">cachedGatingSequence</span> <span class="operator">=</span> <span class="built_in">this</span>.cachedValue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//只要wrapPoint大于缓存的所有gatingSequences最小的那个，就重新检查更新缓存</span></span><br><span class="line">    <span class="keyword">if</span> (wrapPoint &gt; cachedGatingSequence || cachedGatingSequence &gt; nextValue)&#123;</span><br><span class="line">        <span class="keyword">if</span> (doStore)        &#123;</span><br><span class="line">            cursor.setVolatile(nextValue);  <span class="comment">// StoreLoad fence</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 检查缓存</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">minSequence</span> <span class="operator">=</span> Util.getMinimumSequence(gatingSequences, nextValue);</span><br><span class="line">        <span class="built_in">this</span>.cachedValue = minSequence;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 回退一圈的元素没有被消费，不能覆盖，所以没有足够可用容量</span></span><br><span class="line">        <span class="keyword">if</span> (wrapPoint &gt; minSequence)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> Sequencer#next()</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">next</span><span class="params">()</span>&#123; <span class="keyword">return</span> next(<span class="number">1</span>); &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 申请n个Sequence(value)用于生产event的位置</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">next</span><span class="params">(<span class="type">int</span> n)</span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt; <span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;n must be &gt; 0&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">long</span> <span class="variable">nextValue</span> <span class="operator">=</span> <span class="built_in">this</span>.nextValue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 方法逻辑与hasAvailableCapacity大致相同，这里主要是需要阻塞等待可用的sequence</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">nextSequence</span> <span class="operator">=</span> nextValue + n;</span><br><span class="line">    <span class="type">long</span> <span class="variable">wrapPoint</span> <span class="operator">=</span> nextSequence - bufferSize;</span><br><span class="line">    <span class="type">long</span> <span class="variable">cachedGatingSequence</span> <span class="operator">=</span> <span class="built_in">this</span>.cachedValue;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (wrapPoint &gt; cachedGatingSequence || cachedGatingSequence &gt; nextValue)&#123;</span><br><span class="line">        cursor.setVolatile(nextValue);  <span class="comment">// StoreLoad fence</span></span><br><span class="line"></span><br><span class="line">        <span class="type">long</span> minSequence;</span><br><span class="line">        <span class="keyword">while</span> (wrapPoint &gt; (minSequence = Util.getMinimumSequence(gatingSequences, nextValue)))&#123;</span><br><span class="line">            LockSupport.parkNanos(<span class="number">1L</span>); <span class="comment">// <span class="doctag">TODO:</span> Use waitStrategy to spin? 根据等待策略自旋</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">this</span>.cachedValue = minSequence;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.nextValue = nextSequence;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> nextSequence;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> Sequencer#tryNext()</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">tryNext</span><span class="params">()</span> <span class="keyword">throws</span> InsufficientCapacityException &#123; <span class="keyword">return</span> tryNext(<span class="number">1</span>); &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 尝试申请n个sequence(value)，容量不足会抛出InsufficientCapacityException。</span></span><br><span class="line"><span class="comment"> * 容量检查，使用hasAvailableCapacity方法检查</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">tryNext</span><span class="params">(<span class="type">int</span> n)</span> <span class="keyword">throws</span> InsufficientCapacityException&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt; <span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;n must be &gt; 0&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!hasAvailableCapacity(n, <span class="literal">true</span>))&#123;</span><br><span class="line">        <span class="keyword">throw</span> InsufficientCapacityException.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> <span class="variable">nextSequence</span> <span class="operator">=</span> <span class="built_in">this</span>.nextValue += n;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> nextSequence;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取剩余的容量大小， 为负数表示消费被生产套圈</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">remainingCapacity</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="type">long</span> <span class="variable">nextValue</span> <span class="operator">=</span> <span class="built_in">this</span>.nextValue;</span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> <span class="variable">consumed</span> <span class="operator">=</span> Util.getMinimumSequence(gatingSequences, nextValue);</span><br><span class="line">    <span class="type">long</span> <span class="variable">produced</span> <span class="operator">=</span> nextValue;</span><br><span class="line">    <span class="keyword">return</span> getBufferSize() - (produced - consumed);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Claim a specific sequence.  Only used if initialising the ring buffer to a specific value.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">claim</span><span class="params">(<span class="type">long</span> sequence)</span>&#123; <span class="built_in">this</span>.nextValue = sequence; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 发布Event</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">publish</span><span class="params">(<span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    <span class="comment">// cursor代表可以消费的sequence</span></span><br><span class="line">    cursor.set(sequence);</span><br><span class="line">    waitStrategy.signalAllWhenBlocking();</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">publish</span><span class="params">(<span class="type">long</span> lo, <span class="type">long</span> hi)</span>&#123; publish(hi); &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isAvailable</span><span class="params">(<span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> sequence &lt;= cursor.get();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getHighestPublishedSequence</span><span class="params">(<span class="type">long</span> lowerBound, <span class="type">long</span> availableSequence)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> availableSequence;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+<h4 id="MultiProducerSequencer"><a href="#MultiProducerSequencer" class="headerlink" title="MultiProducerSequencer"></a>MultiProducerSequencer</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用于Unsafe类获取和设置值</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Unsafe</span> <span class="variable">UNSAFE</span> <span class="operator">=</span> Util.getUnsafe();</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">BASE</span> <span class="operator">=</span> UNSAFE.arrayBaseOffset(<span class="type">int</span>[].class);</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">SCALE</span> <span class="operator">=</span> UNSAFE.arrayIndexScale(<span class="type">int</span>[].class);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 是gatingSequence的缓存，和之前的单一生产者的cacheValue类似，由于是Sequence对象，所以不需要做缓存填充</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Sequence</span> <span class="variable">gatingSequenceCache</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Sequence</span>(Sequencer.INITIAL_CURSOR_VALUE);</span><br><span class="line"><span class="comment">// 每个槽存储ringbuffer中当前槽消费了几次，也就是Sequence转了多少圈，下标就是槽</span></span><br><span class="line"><span class="comment">// availableBuffer数组初始化每个值都为-1</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">int</span>[] availableBuffer;</span><br><span class="line"><span class="comment">// indexMask=bufferSize - 1 &gt;&gt; sequence % 2^n = sequence &amp; （2^n - 1）</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">int</span> indexMask;</span><br><span class="line"><span class="comment">// 上面的n，用来定位某个sequence到底转了多少圈  sequence / 2^n == sequence &gt;&gt;&gt; n</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">int</span> indexShift;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 检查是否有足够容量的逻辑与单生产类似</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">hasAvailableCapacity</span><span class="params">(<span class="keyword">final</span> <span class="type">int</span> requiredCapacity)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> hasAvailableCapacity(gatingSequences, requiredCapacity, cursor.get());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">hasAvailableCapacity</span><span class="params">(Sequence[] gatingSequences, <span class="keyword">final</span> <span class="type">int</span> requiredCapacity, <span class="type">long</span> cursorValue)</span>&#123;</span><br><span class="line">    <span class="comment">// 加上期望容量后回退一圈的位置</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">wrapPoint</span> <span class="operator">=</span> (cursorValue + requiredCapacity) - bufferSize;</span><br><span class="line">    <span class="comment">// 当前缓存的最小待消费的位置</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">cachedGatingSequence</span> <span class="operator">=</span> gatingSequenceCache.get();</span><br><span class="line">    <span class="comment">// 如果还没消费到</span></span><br><span class="line">    <span class="keyword">if</span> (wrapPoint &gt; cachedGatingSequence || cachedGatingSequence &gt; cursorValue)&#123;</span><br><span class="line">        <span class="comment">// 从实时数据中拿出最小消费的sequence value 并更新缓存</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">minSequence</span> <span class="operator">=</span> Util.getMinimumSequence(gatingSequences, cursorValue);</span><br><span class="line">        gatingSequenceCache.set(minSequence);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (wrapPoint &gt; minSequence)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 申请Sequence</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">next</span><span class="params">()</span>&#123; <span class="keyword">return</span> next(<span class="number">1</span>); &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">next</span><span class="params">(<span class="type">int</span> n)</span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt; <span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;n must be &gt; 0&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> current;</span><br><span class="line">    <span class="type">long</span> next;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 逻辑与单生产类似，但是这里多线程竞争资源时，通过自旋CAS设置期望值，cursor表示请求到的sequence</span></span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        current = cursor.get();</span><br><span class="line">        next = current + n;</span><br><span class="line"></span><br><span class="line">        <span class="type">long</span> <span class="variable">wrapPoint</span> <span class="operator">=</span> next - bufferSize;</span><br><span class="line">        <span class="type">long</span> <span class="variable">cachedGatingSequence</span> <span class="operator">=</span> gatingSequenceCache.get();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (wrapPoint &gt; cachedGatingSequence || cachedGatingSequence &gt; current)&#123;</span><br><span class="line">            <span class="type">long</span> <span class="variable">gatingSequence</span> <span class="operator">=</span> Util.getMinimumSequence(gatingSequences, current);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (wrapPoint &gt; gatingSequence)&#123;</span><br><span class="line">                LockSupport.parkNanos(<span class="number">1</span>); <span class="comment">// TODO, should we spin based on the wait strategy?</span></span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 更新最小消费到的sequence缓存</span></span><br><span class="line">            gatingSequenceCache.set(gatingSequence);</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">if</span> (cursor.compareAndSet(current, next))&#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;<span class="keyword">while</span> (<span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> next;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 发布指定sequence的event</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">publish</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    setAvailable(sequence);</span><br><span class="line">    waitStrategy.signalAllWhenBlocking();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 发布范围内的sequence</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">publish</span><span class="params">(<span class="type">long</span> lo, <span class="type">long</span> hi)</span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">long</span> <span class="variable">l</span> <span class="operator">=</span> lo; l &lt;= hi; l++)&#123;</span><br><span class="line">        setAvailable(l);</span><br><span class="line">    &#125;</span><br><span class="line">    waitStrategy.signalAllWhenBlocking();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 后面的方法用于设置availableBuffer中的标记</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 使用该标记数组的主要原因是在多个发布线程中共享一个sequence（比如说单生产者中的nextValue）</span></span><br><span class="line"><span class="comment"> * calculateIndex(sequence) 计算槽的index</span></span><br><span class="line"><span class="comment"> * calculateAvailabilityFlag(sequence) 计算已经被生产多少圈</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">setAvailable</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    setAvailableBufferValue(calculateIndex(sequence), calculateAvailabilityFlag(sequence));</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">setAvailableBufferValue</span><span class="params">(<span class="type">int</span> index, <span class="type">int</span> flag)</span>&#123;</span><br><span class="line">    <span class="type">long</span> <span class="variable">bufferAddress</span> <span class="operator">=</span> (index * SCALE) + BASE;</span><br><span class="line">    UNSAFE.putOrderedInt(availableBuffer, bufferAddress, flag);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> Sequencer#isAvailable(long)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isAvailable</span><span class="params">(<span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> calculateIndex(sequence);</span><br><span class="line">    <span class="type">int</span> <span class="variable">flag</span> <span class="operator">=</span> calculateAvailabilityFlag(sequence);</span><br><span class="line">    <span class="type">long</span> <span class="variable">bufferAddress</span> <span class="operator">=</span> (index * SCALE) + BASE;</span><br><span class="line">    <span class="keyword">return</span> UNSAFE.getIntVolatile(availableBuffer, bufferAddress) == flag;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getHighestPublishedSequence</span><span class="params">(<span class="type">long</span> lowerBound, <span class="type">long</span> availableSequence)</span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">long</span> <span class="variable">sequence</span> <span class="operator">=</span> lowerBound; sequence &lt;= availableSequence; sequence++)    &#123;</span><br><span class="line">        <span class="keyword">if</span> (!isAvailable(sequence))&#123;</span><br><span class="line">            <span class="keyword">return</span> sequence - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> availableSequence;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">int</span> <span class="title function_">calculateAvailabilityFlag</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="type">int</span>) (sequence &gt;&gt;&gt; indexShift);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">int</span> <span class="title function_">calculateIndex</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">    <span class="comment">// x / 2^n == x &gt;&gt;&gt; n</span></span><br><span class="line">    <span class="keyword">return</span> ((<span class="type">int</span>) sequence) &amp; indexMask;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+<h3 id="环形无锁队列RingBuffer"><a href="#环形无锁队列RingBuffer" class="headerlink" title="环形无锁队列RingBuffer"></a>环形无锁队列RingBuffer</h3><p><img src="http://static.tmaczhao.cn/images/180314/kI2D3GH0d6.png" alt="mark"></p>
+<blockquote>
+<p>RingBuffer类中保存了整个RingBuffer每个槽（entry或者slot）的Event对象，对应的field是private final Object[] entries；这些对象只在RingBuffer初始化时被建立，之后就是修改这些对象（初始化Event和填充Event），并不会重新建立新的对象。RingBuffer可以有多生产者和消费者，所以这个entries会被多线程访问频繁的，但不会修改（因为不会重新建立新的对象，这个数组保存的是对对象的具体引用，所以不会变）</p>
+</blockquote>
+<h4 id="运算取模"><a href="#运算取模" class="headerlink" title="运算取模"></a>运算取模</h4><blockquote>
+<p>m % 2^n &#x3D; m &amp; ( 2^n - 1 )   &#x2F;&#x2F;RingBuffer中数组大小必须为2的倍数</p>
+</blockquote>
+<h4 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">RingBufferFields</span>&lt;E&gt; <span class="keyword">extends</span> <span class="title class_">RingBufferPad</span>&#123;</span><br><span class="line">    <span class="comment">// 数组前或后需要填充的对象数量</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> BUFFER_PAD;</span><br><span class="line">    <span class="comment">//Buffer数组起始基址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> REF_ARRAY_BASE;</span><br><span class="line">    <span class="comment">//2^n=每个数组对象引用所占空间，这个n就是REF_ELEMENT_SHIFT</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Unsafe</span> <span class="variable">UNSAFE</span> <span class="operator">=</span> Util.getUnsafe();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span>&#123;</span><br><span class="line">        <span class="comment">// Object数组引用长度，32位为4字节，64位为8字节</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">int</span> <span class="variable">scale</span> <span class="operator">=</span> UNSAFE.arrayIndexScale(Object[].class);</span><br><span class="line">        <span class="keyword">if</span> (<span class="number">4</span> == scale)&#123;</span><br><span class="line">            REF_ELEMENT_SHIFT = <span class="number">2</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="number">8</span> == scale)&#123;</span><br><span class="line">            REF_ELEMENT_SHIFT = <span class="number">3</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(<span class="string">&quot;Unknown pointer size&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//需要填充128字节，缓存行长度一般是128字节</span></span><br><span class="line">        BUFFER_PAD = <span class="number">128</span> / scale;</span><br><span class="line">        <span class="comment">// Including the buffer pad in the array base offset， 偏移128个字节</span></span><br><span class="line">        REF_ARRAY_BASE = UNSAFE.arrayBaseOffset(Object[].class) + (BUFFER_PAD &lt;&lt; REF_ELEMENT_SHIFT);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">long</span> indexMask;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Object[] entries;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="type">int</span> bufferSize;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> Sequencer sequencer;</span><br><span class="line"></span><br><span class="line">    RingBufferFields(EventFactory&lt;E&gt; eventFactory, Sequencer sequencer)&#123;</span><br><span class="line">        <span class="built_in">this</span>.sequencer = sequencer;</span><br><span class="line">        <span class="built_in">this</span>.bufferSize = sequencer.getBufferSize();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (bufferSize &lt; <span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;bufferSize must not be less than 1&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (Integer.bitCount(bufferSize) != <span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;bufferSize must be a power of 2&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">this</span>.indexMask = bufferSize - <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * 结构：缓存行填充，避免频繁访问的任一entry与另一被修改的无关变量写入同一缓存行</span></span><br><span class="line"><span class="comment">         * --------------</span></span><br><span class="line"><span class="comment">         * *   数组头   * BASE</span></span><br><span class="line"><span class="comment">         * *   Padding  * 128字节</span></span><br><span class="line"><span class="comment">         * * reference1 * SCALE</span></span><br><span class="line"><span class="comment">         * * reference2 * SCALE</span></span><br><span class="line"><span class="comment">         * * reference3 * SCALE</span></span><br><span class="line"><span class="comment">         * ..........</span></span><br><span class="line"><span class="comment">         * *   Padding  * 128字节</span></span><br><span class="line"><span class="comment">         * --------------</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.entries = <span class="keyword">new</span> <span class="title class_">Object</span>[sequencer.getBufferSize() + <span class="number">2</span> * BUFFER_PAD];</span><br><span class="line">        fill(eventFactory);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从填充偏移位置开始初始化数据</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">fill</span><span class="params">(EventFactory&lt;E&gt; eventFactory)</span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; bufferSize; i++)</span><br><span class="line">        &#123;</span><br><span class="line">            entries[BUFFER_PAD + i] = eventFactory.newInstance();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从偏移位置开始获取数据</span></span><br><span class="line">    <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> E <span class="title function_">elementAt</span><span class="params">(<span class="type">long</span> sequence)</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (E) UNSAFE.getObject(entries, REF_ARRAY_BASE + ((sequence &amp; indexMask) &lt;&lt; REF_ELEMENT_SHIFT));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>RingBuffer中方法大部分都是在包装EventTranslator以及Sequencer中的方法。</li>
+<li>构造一个RingBuffer需要如下元素：实现EventFactory的Event的工厂，实现Sequencer的生产者，等待策略waitStrategy还有bufferSize。</li>
+</ul>
+<blockquote>
+<p>EventTranslator的作用主要是发布Event，还有EventTranslatorTwoArg，EventTranslatorVararg等有类似作用</p>
+</blockquote>
+<h3 id="WaitStrategy"><a href="#WaitStrategy" class="headerlink" title="WaitStrategy"></a>WaitStrategy</h3><p><img src="https://static.tmaczhao.cn/notes/disruptor/20181122153916.png" alt="waitStrategy"></p>
+<ul>
+<li>BlockingWaitStrategy：通过线程阻塞的方式，等待生产者唤醒</li>
+<li>BusySpinWaitStrategy：线程一直自旋等待，比较耗CPU。</li>
+<li>LiteBlockingWaitStrategy：通过线程阻塞的方式，等待生产者唤醒，比BlockingWaitStrategy要轻，某些情况下可以减少阻塞的次数。</li>
+<li>PhasedBackoffWaitStrategy：根据指定的时间段参数和指定的等待策略决定采用哪种等待策略。</li>
+<li>SleepingWaitStrategy：可通过参数设置，使线程通过Thread.yield()主动放弃执行，通过线程调度器重新调度；或一直自旋等待。</li>
+<li>TimeoutBlockingWaitStrategy：通过参数设置阻塞时间，如果超时则抛出异常。</li>
+<li>YieldingWaitStrategy： 通过Thread.yield()主动放弃执行，通过线程调度器重新调度。</li>
+</ul>
+<h4 id="waitStrategy接口"><a href="#waitStrategy接口" class="headerlink" title="waitStrategy接口"></a>waitStrategy接口</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">WaitStrategy</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> sequence 需要等待available的sequence（需要消费的sequence）</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> cursor 对应RingBuffer的Cursor（生产的sequence）</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> dependentSequence 需要等待（依赖）的Sequence（sequence依赖）</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> barrier 多消费者注册的SequenceBarrier</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 已经available的sequence</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> AlertException</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> InterruptedException</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> TimeoutException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">long</span> <span class="title function_">waitFor</span><span class="params">(<span class="type">long</span> sequence, Sequence cursor, Sequence dependentSequence, SequenceBarrier barrier)</span></span><br><span class="line">            <span class="keyword">throws</span> AlertException, InterruptedException, TimeoutException;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 唤醒所有等待的消费者</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">signalAllWhenBlocking</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h4 id="BlockingWaitStrategy"><a href="#BlockingWaitStrategy" class="headerlink" title="BlockingWaitStrategy"></a>BlockingWaitStrategy</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">BlockingWaitStrategy</span> <span class="keyword">implements</span> <span class="title class_">WaitStrategy</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Lock</span> <span class="variable">lock</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ReentrantLock</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Condition</span> <span class="variable">processorNotifyCondition</span> <span class="operator">=</span> lock.newCondition();</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">waitFor</span><span class="params">(<span class="type">long</span> sequence, Sequence cursorSequence, Sequence dependentSequence, SequenceBarrier barrier)</span></span><br><span class="line">        <span class="keyword">throws</span> AlertException, InterruptedException&#123;</span><br><span class="line">        <span class="type">long</span> availableSequence;</span><br><span class="line">        <span class="comment">// 生产位置小于消费位置，阻塞等待</span></span><br><span class="line">        <span class="keyword">if</span> (cursorSequence.get() &lt; sequence)&#123;</span><br><span class="line">            lock.lock();</span><br><span class="line">            <span class="keyword">try</span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (cursorSequence.get() &lt; sequence)&#123;</span><br><span class="line">                    <span class="comment">//检查是否Alert，如果Alert，则抛出AlertException</span></span><br><span class="line">                    <span class="comment">//Alert在这里代表对应的消费者被halt停止了</span></span><br><span class="line">                    barrier.checkAlert();</span><br><span class="line">                    <span class="comment">//在processorNotifyCondition上等待唤醒</span></span><br><span class="line">                    processorNotifyCondition.await();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                lock.unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> ((availableSequence = dependentSequence.get()) &lt; sequence)&#123;</span><br><span class="line">            barrier.checkAlert();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> availableSequence;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// BusySpinWaitStrategy等待策略，一直自旋</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">waitFor</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> sequence, Sequence cursor, <span class="keyword">final</span> Sequence dependentSequence, <span class="keyword">final</span> SequenceBarrier barrier)</span></span><br><span class="line">            <span class="keyword">throws</span> AlertException, InterruptedException &#123;</span><br><span class="line"></span><br><span class="line">        <span class="type">long</span> availableSequence;</span><br><span class="line">        <span class="comment">//一直while自旋检查</span></span><br><span class="line">        <span class="keyword">while</span> ((availableSequence = dependentSequence.get()) &lt; sequence) &#123;</span><br><span class="line">            barrier.checkAlert();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> availableSequence;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">signalAllWhenBlocking</span><span class="params">()</span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="comment">//生产者生产消息后，会唤醒所有等待的消费者线程</span></span><br><span class="line">            processorNotifyCondition.signalAll();</span><br><span class="line">        &#125;<span class="keyword">finally</span>&#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="SequenceBarrier"><a href="#SequenceBarrier" class="headerlink" title="SequenceBarrier"></a>SequenceBarrier</h3><p><img src="http://static.tmaczhao.cn/images/180314/f3329eC4jf.png" alt="mark"></p>
+<p>SequenceBarrier只有一个实现类，就是ProcessingSequenceBarrier。<br>ProcessingSequenceBarrier由生产者Sequencer，生产定位cursorSequence，等待策略waitStrategy还有一组依赖sequence：dependentSequence组成：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">ProcessingSequenceBarrier</span> <span class="keyword">implements</span> <span class="title class_">SequenceBarrier</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> WaitStrategy waitStrategy;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Sequence dependentSequence;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="type">boolean</span> <span class="variable">alerted</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Sequence cursorSequence;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Sequencer sequencer;</span><br><span class="line"></span><br><span class="line">    ProcessingSequenceBarrier(<span class="keyword">final</span> Sequencer sequencer, <span class="keyword">final</span> WaitStrategy waitStrategy,</span><br><span class="line">        <span class="keyword">final</span> Sequence cursorSequence,</span><br><span class="line">        <span class="keyword">final</span> Sequence[] dependentSequences)&#123;</span><br><span class="line">        <span class="built_in">this</span>.sequencer = sequencer;</span><br><span class="line">        <span class="built_in">this</span>.waitStrategy = waitStrategy;</span><br><span class="line">        <span class="built_in">this</span>.cursorSequence = cursorSequence;</span><br><span class="line">        <span class="comment">// 如果没有依赖，则直接等于消费的sequence</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="number">0</span> == dependentSequences.length)&#123;</span><br><span class="line">            dependentSequence = cursorSequence;</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            dependentSequence = <span class="keyword">new</span> <span class="title class_">FixedSequenceGroup</span>(dependentSequences);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">waitFor</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> sequence)</span> <span class="keyword">throws</span> AlertException, InterruptedException, TimeoutException &#123;</span><br><span class="line">        checkAlert();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//通过等待策略获取下一个可消费的sequence，这个sequence通过之前的讲解可以知道，</span></span><br><span class="line">        <span class="comment">// 需要大于cursorSequence和dependentSequence，我们可以通过dependentSequence实现先后消费</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">availableSequence</span> <span class="operator">=</span> waitStrategy.waitFor(sequence, cursorSequence, dependentSequence, <span class="built_in">this</span>);</span><br><span class="line">        <span class="comment">//等待可能被中断，所以检查下availableSequence是否小于sequence</span></span><br><span class="line">        <span class="keyword">if</span> (availableSequence &lt; sequence) &#123;</span><br><span class="line">            <span class="keyword">return</span> availableSequence;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果不小于，返回所有sequence（可能多生产者）和availableSequence中最大的</span></span><br><span class="line">        <span class="keyword">return</span> sequencer.getHighestPublishedSequence(sequence, availableSequence);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getCursor</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> dependentSequence.get();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isAlerted</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> alerted;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">alert</span><span class="params">()</span>&#123;</span><br><span class="line">        alerted = <span class="literal">true</span>;</span><br><span class="line">        waitStrategy.signalAllWhenBlocking();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">clearAlert</span><span class="params">()</span>&#123;</span><br><span class="line">        alerted = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">checkAlert</span><span class="params">()</span> <span class="keyword">throws</span> AlertException&#123;</span><br><span class="line">        <span class="keyword">if</span> (alerted)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">throw</span> AlertException.INSTANCE;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/disruptor/" rel="tag"># disruptor</a>
+              <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/" rel="tag"># 消息队列</a>
+              <a href="/tags/%E9%AB%98%E6%80%A7%E8%83%BD/" rel="tag"># 高性能</a>
+              <a href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag"># 并发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/mysql-performance-optimization-summary/" rel="prev" title="MySQL性能优化概述">
+      <i class="fa fa-chevron-left"></i> MySQL性能优化概述
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/java-memory-model/" rel="next" title="深入理解JVM内存模型 笔记">
+      深入理解JVM内存模型 笔记 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#disruptor-%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">disruptor 结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%AA%E5%85%B1%E4%BA%AB"><span class="nav-number">2.</span> <span class="nav-text">伪共享</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Sequence-AtomicLong%E5%A2%9E%E5%BC%BA%EF%BC%88%E7%BC%93%E5%AD%98%E8%A1%8C%E5%A1%AB%E5%85%85%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">Sequence - AtomicLong增强（缓存行填充）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Producer"><span class="nav-number">4.</span> <span class="nav-text">Producer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Cursored%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.1.</span> <span class="nav-text">Cursored接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Sequenced%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.2.</span> <span class="nav-text">Sequenced接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Sequencer%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.3.</span> <span class="nav-text">Sequencer接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AbstractSequencer"><span class="nav-number">4.4.</span> <span class="nav-text">AbstractSequencer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SingleProducerSequencer%EF%BC%88%E7%BA%BF%E7%A8%8B%E4%B8%8D%E5%AE%89%E5%85%A8%EF%BC%89"><span class="nav-number">4.5.</span> <span class="nav-text">SingleProducerSequencer（线程不安全）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MultiProducerSequencer"><span class="nav-number">4.6.</span> <span class="nav-text">MultiProducerSequencer</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%AF%E5%BD%A2%E6%97%A0%E9%94%81%E9%98%9F%E5%88%97RingBuffer"><span class="nav-number">5.</span> <span class="nav-text">环形无锁队列RingBuffer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E7%AE%97%E5%8F%96%E6%A8%A1"><span class="nav-number">5.1.</span> <span class="nav-text">运算取模</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%BA%90%E7%A0%81"><span class="nav-number">5.2.</span> <span class="nav-text">源码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WaitStrategy"><span class="nav-number">6.</span> <span class="nav-text">WaitStrategy</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#waitStrategy%E6%8E%A5%E5%8F%A3"><span class="nav-number">6.1.</span> <span class="nav-text">waitStrategy接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#BlockingWaitStrategy"><span class="nav-number">6.2.</span> <span class="nav-text">BlockingWaitStrategy</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SequenceBarrier"><span class="nav-number">7.</span> <span class="nav-text">SequenceBarrier</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="tmachc"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">tmachc</p>
+  <div class="site-description" itemprop="description">Just Do It.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chenxi-zhao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chenxi-zhao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chenxi.zhao@foxmail.com" title="E-Mail → mailto:chenxi.zhao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tmachc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">56k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:23</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Monda:300,300italic,400,400italic,700,700italic|Lobster Two:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="根据修改的数据类型，可以将JUC包中的原子操作类可以分为4类。 1.基本类型: AtomicInteger, AtomicLong, AtomicBoolean ;2.数组类型: AtomicIntegerArray, AtomicLongArray, AtomicReferenceArray ;3.引用类型: AtomicReference, AtomicStampedRerence, Atom">
+<meta property="og:type" content="article">
+<meta property="og:title" content="J.U.C. 原子操作">
+<meta property="og:url" content="http://example.com/2016/juc-atomic-operation/index.html">
+<meta property="og:site_name" content="tmachc&#39;s notes">
+<meta property="og:description" content="根据修改的数据类型，可以将JUC包中的原子操作类可以分为4类。 1.基本类型: AtomicInteger, AtomicLong, AtomicBoolean ;2.数组类型: AtomicIntegerArray, AtomicLongArray, AtomicReferenceArray ;3.引用类型: AtomicReference, AtomicStampedRerence, Atom">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-05-09T01:31:51.000Z">
+<meta property="article:modified_time" content="2023-01-17T10:46:42.058Z">
+<meta property="article:author" content="tmachc">
+<meta property="article:tag" content="java">
+<meta property="article:tag" content="多线程">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2016/juc-atomic-operation/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>J.U.C. 原子操作 | tmachc's notes</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">tmachc's notes</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Stay Hungry, Stay Foolish.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/juc-atomic-operation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="tmachc">
+      <meta itemprop="description" content="Just Do It.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tmachc's notes">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          J.U.C. 原子操作
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-05-09 09:31:51" itemprop="dateCreated datePublished" datetime="2016-05-09T09:31:51+08:00">2016-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-01-17 18:46:42" itemprop="dateModified" datetime="2023-01-17T18:46:42+08:00">2023-01-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java-multi-thread/" itemprop="url" rel="index"><span itemprop="name">java-multi-thread</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>14 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>根据修改的数据类型，可以将JUC包中的原子操作类可以分为4类。</p>
+<p>1.<strong><code>基本类型</code></strong>: AtomicInteger, AtomicLong, AtomicBoolean ;<br>2.<strong><code>数组类型</code></strong>: AtomicIntegerArray, AtomicLongArray, AtomicReferenceArray ;<br>3.<strong><code>引用类型:</code></strong> AtomicReference, AtomicStampedRerence, AtomicMarkableReference ;<br>4.<strong><code>对象的属性修改类型</code></strong>: AtomicIntegerFieldUpdater, AtomicLongFieldUpdater, AtomicReferenceFieldUpdater 。</p>
+<p>这些类存在的目的是对相应的数据进行原子操作。</p>
+<p><font color="red"><strong>原子操作的描述是：多个线程执行一个操作时，其中任何一个线程要么完全执行完此操作，要么没有执行此操作的任何步骤，那么这个操作就是原子的。</strong></font></p>
+<p><strong>这些类主要都是使用CAS机制以及volatile关键字来保证操作原子性</strong></p>
+<span id="more"></span>
+
+<h3 id="AtomicInteger-AtomicLong和AtomicBoolean"><a href="#AtomicInteger-AtomicLong和AtomicBoolean" class="headerlink" title="AtomicInteger, AtomicLong和AtomicBoolean"></a>AtomicInteger, AtomicLong和AtomicBoolean</h3><p>这3个基本类型的原子类的原理和用法相似。以下以AtomicLong为例对基本类型的原子类进行介绍</p>
+<p>AtomicLong是作用是对长整形进行原子操作。在32位操作系统中，64位的long和double变量由于会被JVM当作两个分离的32位来进行操作，所以不具有原子性。而使用AtomicLong能让long的操作保持原子型。</p>
+<p>AtomicLong函数列表</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 构造函数</span></span><br><span class="line">AtomicLong()</span><br><span class="line"><span class="comment">// 创建值为initialValue的AtomicLong对象</span></span><br><span class="line">AtomicLong(<span class="type">long</span> initialValue)</span><br><span class="line"><span class="comment">// 以原子方式设置当前值为newValue。</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">set</span><span class="params">(<span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 获取当前值</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">get</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式将当前值减1，并返回减1后的值。等价于“--num”</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">decrementAndGet</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式将当前值减1，并返回减1前的值。等价于“num--”</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">getAndDecrement</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式将当前值加1，并返回加1后的值。等价于“++num”</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">incrementAndGet</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式将当前值加1，并返回加1前的值。等价于“num++”</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">getAndIncrement</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式将delta与当前值相加，并返回相加后的值。</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">addAndGet</span><span class="params">(<span class="type">long</span> delta)</span></span><br><span class="line"><span class="comment">// 以原子方式将delta添加到当前值，并返回相加前的值。</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">getAndAdd</span><span class="params">(<span class="type">long</span> delta)</span></span><br><span class="line"><span class="comment">// 如果当前值 == expect，则以原子方式将该值设置为update。成功返回true，否则返回false，并且不修改原值。</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">compareAndSet</span><span class="params">(<span class="type">long</span> expect, <span class="type">long</span> update)</span></span><br><span class="line"><span class="comment">// 以原子方式设置当前值为newValue，并返回旧值。</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">long</span> <span class="title function_">getAndSet</span><span class="params">(<span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 返回当前值对应的int值</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">intValue</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 获取当前值对应的long值</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">longValue</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以float形式返回当前值</span></span><br><span class="line"><span class="type">float</span> <span class="title function_">floatValue</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以double形式返回当前值</span></span><br><span class="line"><span class="type">double</span> <span class="title function_">doubleValue</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 最后设置为给定值。延时设置变量值，这个等价于set()方法，但是由于字段是volatile类型的，因此次字段的修改会比普通字段（非volatile字段）有稍微的性能延时（尽管可以忽略），所以如果不是想立即读取设置的新值，允许在“后台”修改值，那么此方法就很有用。如果还是难以理解，这里就类似于启动一个后台线程如执行修改新值的任务，原线程就不等待修改结果立即返回（这种解释其实是不正确的，但是可以这么理解）。</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">lazySet</span><span class="params">(<span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将该设置为给定的更新值。JSR规范中说：以原子方式读取和有条件地写入变量但不创建任何happen-before排序，因此不提供与除weakCompareAndSet目标外任何变量以前或后续读取或写入操作有关的任何保证。大意就是说调用weakCompareAndSet时并不能保证不存在happen-before的发生（也就是可能存在指令重排序导致此操作失败）。但是从Java源码来看，其实此方法并没有实现JSR规范的要求，最后效果和compareAndSet是等效的，都调用了unsafe.compareAndSwapInt()完成操作。</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">weakCompareAndSet</span><span class="params">(<span class="type">long</span> expect, <span class="type">long</span> update)</span></span><br></pre></td></tr></table></figure>
+
+
+<h3 id="AtomicLongArray"><a href="#AtomicLongArray" class="headerlink" title="AtomicLongArray"></a>AtomicLongArray</h3><p>AtomicLongArray的作用是对”长整形数组”进行原子操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建给定长度的新AtomicLongArray。</span></span><br><span class="line">AtomicLongArray(<span class="type">int</span> length)</span><br><span class="line"><span class="comment">// 创建与给定数组具有相同长度的新AtomicLongArray，并从给定数组复制其所有元素。</span></span><br><span class="line">AtomicLongArray(<span class="type">long</span>[] array)</span><br><span class="line"><span class="comment">// 以原子方式将给定值添加到索引i的元素。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">addAndGet</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> delta)</span></span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将该值设置为给定的更新值。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">compareAndSet</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> expect, <span class="type">long</span> update)</span></span><br><span class="line"><span class="comment">// 以原子方式将索引i的元素减1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">decrementAndGet</span><span class="params">(<span class="type">int</span> i)</span></span><br><span class="line"><span class="comment">// 获取位置i的当前值。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">get</span><span class="params">(<span class="type">int</span> i)</span></span><br><span class="line"><span class="comment">// 以原子方式将给定值与索引i的元素相加。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndAdd</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> delta)</span></span><br><span class="line"><span class="comment">// 以原子方式将索引i的元素减1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndDecrement</span><span class="params">(<span class="type">int</span> i)</span></span><br><span class="line"><span class="comment">// 以原子方式将索引i的元素加1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndIncrement</span><span class="params">(<span class="type">int</span> i)</span></span><br><span class="line"><span class="comment">// 以原子方式将位置i的元素设置为给定值，并返回旧值。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndSet</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 以原子方式将索引i的元素加1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">incrementAndGet</span><span class="params">(<span class="type">int</span> i)</span></span><br><span class="line"><span class="comment">// 最终将位置i的元素设置为给定值。</span></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">lazySet</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 返回该数组的长度。</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">length</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 将位置i的元素设置为给定值。</span></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">set</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 返回数组当前值的字符串表示形式。</span></span><br><span class="line">String <span class="title function_">toString</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将该值设置为给定的更新值。</span></span><br><span class="line"><span class="type">boolean</span>    <span class="title function_">weakCompareAndSet</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> expect, <span class="type">long</span> update)</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="AtomicReference"><a href="#AtomicReference" class="headerlink" title="AtomicReference"></a>AtomicReference</h3><p>AtomicReference是作用是对”对象”进行原子操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// volatile类型</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> V value;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用null初始值创建新的AtomicReference。</span></span><br><span class="line">AtomicReference()</span><br><span class="line"><span class="comment">// 使用给定的初始值创建新的AtomicReference。</span></span><br><span class="line">AtomicReference(V initialValue)</span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将该值设置为给定的更新值。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">compareAndSet</span><span class="params">(V expect, V update)</span></span><br><span class="line"><span class="comment">// 获取当前值。</span></span><br><span class="line">V <span class="title function_">get</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式设置为给定值，并返回旧值。</span></span><br><span class="line">V <span class="title function_">getAndSet</span><span class="params">(V newValue)</span></span><br><span class="line"><span class="comment">// 最终设置为给定值。</span></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">lazySet</span><span class="params">(V newValue)</span></span><br><span class="line"><span class="comment">// 设置为给定值。</span></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">set</span><span class="params">(V newValue)</span></span><br><span class="line"><span class="comment">// 返回当前值的字符串表示形式。</span></span><br><span class="line">String <span class="title function_">toString</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将该值设置为给定的更新值。</span></span><br><span class="line"><span class="type">boolean</span> <span class="title function_">weakCompareAndSet</span><span class="params">(V expect, V update)</span></span><br></pre></td></tr></table></figure>
+<p>V是泛型，将对象使用AtomicReference包装在进行修改将具有原子性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Object</span> <span class="variable">obj</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Object</span>();</span><br><span class="line"><span class="type">Object</span> <span class="variable">obj2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Object</span>();</span><br><span class="line"><span class="type">AtomicReference</span> <span class="variable">ar</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicReference</span>(obj);</span><br><span class="line">ar.compareAndSet(obj, obj2);</span><br></pre></td></tr></table></figure>
+
+<h3 id="AtomicLongFieldUpdater"><a href="#AtomicLongFieldUpdater" class="headerlink" title="AtomicLongFieldUpdater"></a>AtomicLongFieldUpdater</h3><p>AtomicLongFieldUpdater可以对指定”类的’volatile long’类型的成员”进行原子更新。它是基于反射原理实现的。</p>
+<h4 id="函数列表"><a href="#函数列表" class="headerlink" title="函数列表"></a>函数列表</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 受保护的无操作构造方法，供子类使用。</span></span><br><span class="line"><span class="keyword">protected</span> <span class="title function_">AtomicLongFieldUpdater</span><span class="params">()</span></span><br><span class="line"><span class="comment">// 以原子方式将给定值添加到此更新器管理的给定对象的字段的当前值。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">addAndGet</span><span class="params">(T obj, <span class="type">long</span> delta)</span></span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将此更新器所管理的给定对象的字段设置为给定的更新值。</span></span><br><span class="line"><span class="keyword">abstract</span> <span class="type">boolean</span> <span class="title function_">compareAndSet</span><span class="params">(T obj, <span class="type">long</span> expect, <span class="type">long</span> update)</span></span><br><span class="line"><span class="comment">// 以原子方式将此更新器管理的给定对象字段当前值减1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">decrementAndGet</span><span class="params">(T obj)</span></span><br><span class="line"><span class="comment">// 获取此更新器管理的在给定对象的字段中保持的当前值。</span></span><br><span class="line"><span class="keyword">abstract</span> <span class="type">long</span> <span class="title function_">get</span><span class="params">(T obj)</span></span><br><span class="line"><span class="comment">// 以原子方式将给定值添加到此更新器管理的给定对象的字段的当前值。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndAdd</span><span class="params">(T obj, <span class="type">long</span> delta)</span></span><br><span class="line"><span class="comment">// 以原子方式将此更新器管理的给定对象字段当前值减1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndDecrement</span><span class="params">(T obj)</span></span><br><span class="line"><span class="comment">// 以原子方式将此更新器管理的给定对象字段的当前值加1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndIncrement</span><span class="params">(T obj)</span></span><br><span class="line"><span class="comment">// 将此更新器管理的给定对象的字段以原子方式设置为给定值，并返回旧值。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">getAndSet</span><span class="params">(T obj, <span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 以原子方式将此更新器管理的给定对象字段当前值加1。</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">incrementAndGet</span><span class="params">(T obj)</span></span><br><span class="line"><span class="comment">// 最后将此更新器管理的给定对象的字段设置为给定更新值。</span></span><br><span class="line"><span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">lazySet</span><span class="params">(T obj, <span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 为对象创建并返回一个具有给定字段的更新器。</span></span><br><span class="line"><span class="keyword">static</span> &lt;U&gt; AtomicLongFieldUpdater&lt;U&gt; <span class="title function_">newUpdater</span><span class="params">(Class&lt;U&gt; tclass, String fieldName)</span></span><br><span class="line"><span class="comment">// 将此更新器管理的给定对象的字段设置为给定更新值。</span></span><br><span class="line"><span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">set</span><span class="params">(T obj, <span class="type">long</span> newValue)</span></span><br><span class="line"><span class="comment">// 如果当前值 == 预期值，则以原子方式将此更新器所管理的给定对象的字段设置为给定的更新值。</span></span><br><span class="line"><span class="keyword">abstract</span> <span class="type">boolean</span> <span class="title function_">weakCompareAndSet</span><span class="params">(T obj, <span class="type">long</span> expect, <span class="type">long</span> update)</span></span><br></pre></td></tr></table></figure>
+<h4 id="AtomicLongFieldUpdater示例"><a href="#AtomicLongFieldUpdater示例" class="headerlink" title="AtomicLongFieldUpdater示例"></a>AtomicLongFieldUpdater示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// LongTest.java的源码</span></span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.atomic.AtomicLongFieldUpdater;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LongFieldTest</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 获取Person的class对象</span></span><br><span class="line">        <span class="type">Class</span> <span class="variable">cls</span> <span class="operator">=</span> Person.class;</span><br><span class="line">        <span class="comment">// 新建AtomicLongFieldUpdater对象，传递参数是“class对象”和“long类型在类中对应的名称”</span></span><br><span class="line">        <span class="type">AtomicLongFieldUpdater</span> <span class="variable">mAtoLong</span> <span class="operator">=</span> AtomicLongFieldUpdater.newUpdater(cls, <span class="string">&quot;id&quot;</span>);</span><br><span class="line">        <span class="type">Person</span> <span class="variable">person</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Person</span>(<span class="number">12345678L</span>);</span><br><span class="line">        <span class="comment">// 比较person的&quot;id&quot;属性，如果id的值为12345678L，则设置为1000。</span></span><br><span class="line">        mAtoLong.compareAndSet(person, <span class="number">12345678L</span>, <span class="number">1000</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;id=&quot;</span>+person.getId());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">volatile</span> <span class="type">long</span> id;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Person</span><span class="params">(<span class="type">long</span> id)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setId</span><span class="params">(<span class="type">long</span> id)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="newUpdater-方法源代码分析"><a href="#newUpdater-方法源代码分析" class="headerlink" title="newUpdater()方法源代码分析"></a>newUpdater()方法源代码分析</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;U&gt; AtomicLongFieldUpdater&lt;U&gt; <span class="title function_">newUpdater</span><span class="params">(Class&lt;U&gt; tclass, String fieldName)</span> &#123;</span><br><span class="line">    Class&lt;?&gt; caller = Reflection.getCallerClass();</span><br><span class="line">    <span class="keyword">if</span> (AtomicLong.VM_SUPPORTS_LONG_CAS)</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CASUpdater</span>&lt;U&gt;(tclass, fieldName, caller);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">LockedUpdater</span>&lt;U&gt;(tclass, fieldName, caller);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该方法主要返回一个AtomicLongFieldUpdater类型的对象，用于设置对象中的long型attribute。<br>他返回CASUpdater还是LockedUpdater取决于JVM是否支持long型的CAS函数，这两个类都是AtomicLongFieldUpdater的子类。</p>
+<p>从上述源代码我们可以知道，在JUC的原子类操作中，主要会使用<font color="red">CAS以及volatile</font>关键字来保证操作的原子性。</p>
+<h3 id="指令重排序"><a href="#指令重排序" class="headerlink" title="指令重排序"></a>指令重排序</h3><p>Java语言规范规定了JVM线程内部维持顺序化语义，也就是说只要程序的最终结果等同于它在严格的顺序化环境下的结果，那么指令的执行顺序就可能与代码的顺序不一致。这个过程通过叫做指令的重排序。指令重排序存在的意义在于：JVM能够根据处理器的特性（CPU的多级缓存系统、多核处理器等）适当的重新排序机器指令，使机器指令更符合CPU的执行特点，最大限度的发挥机器的性能。</p>
+<p>程序执行最简单的模型是按照指令出现的顺序执行，这样就与执行指令的CPU无关，最大限度的保证了指令的可移植性。这个模型的专业术语叫做顺序化一致性模型。但是现代计算机体系和处理器架构都不保证这一点（因为人为的指定并不能总是保证符合CPU处理的特性）。</p>
+<blockquote>
+<p>在两个线程交替执行的情况下数据的结果就不确定了，在机器压力大，多核CPU并发执行的情况下，数据的结果将更加不确定。</p>
+</blockquote>
+<h3 id="Happens-before法则"><a href="#Happens-before法则" class="headerlink" title="Happens-before法则"></a>Happens-before法则</h3><p>Java存储模型有一个happens-before原则，就是如果动作B要看到动作A的执行结果（无论A&#x2F;B是否在同一个线程里面执行），那么A&#x2F;B就需要满足happens-before关系。</p>
+<p>在介绍happens-before法则之前介绍一个概念：JMM动作（Java Memeory Model Action），Java存储模型动作。一个动作（Action）包括：变量的读写、监视器加锁和释放锁、线程的start()和join()。</p>
+<p>happens-before完整规则：</p>
+<ol>
+<li>同一个线程中的每个Action都happens-before于出现在其后的任何一个Action。</li>
+<li>对一个监视器的解锁happens-before于每一个后续对同一个监视器的加锁。</li>
+<li>对volatile字段的写入操作happens-before于每一个后续的同一个字段的读操作。</li>
+<li>Thread.start()的调用会happens-before于启动线程里面的动作。</li>
+<li>Thread中的所有动作都happens-before于其他线程检查到此线程结束或者Thread.join（）中返回或者Thread.isAlive()&#x3D;&#x3D;false。</li>
+<li>一个线程A调用另一个另一个线程B的interrupt（）都happens-before于线程A发现B被A中断（B抛出异常或者A检测到B的isInterrupted（）或者interrupted()）。</li>
+<li>一个对象构造函数的结束happens-before与该对象的finalizer的开始</li>
+<li>如果A动作happens-before于B动作，而B动作happens-before与C动作，那么A动作happens-before于C动作。</li>
+</ol>
+<h3 id="CAS操作"><a href="#CAS操作" class="headerlink" title="CAS操作"></a>CAS操作</h3><blockquote>
+<p>所谓乐观锁就是，每次不加锁而是假设没有冲突而去完成某项操作，如果因为冲突失败就重试，直到成功为止。</p>
+</blockquote>
+<p>乐观锁用到的机制主要就有CAS，Compare and Swap。</p>
+<p>CAS有3个操作数，内存值V，旧的预期值A，要修改的新值B。当且仅当预期值A和内存值V相同时，将内存值V修改为B，否则什么都不做。</p>
+<p><font color="red"><strong>非阻塞算法 （nonblocking algorithms）</strong></font></p>
+<blockquote>
+<p>一个线程的失败或者挂起不应该影响其他线程的失败或挂起的算法。</p>
+</blockquote>
+<p>现代的CPU提供了特殊的指令，可以自动更新共享数据，而且能够检测到其他线程的干扰，而compareAndSet() 就用这些代替了锁定。</p>
+<p>拿出AtomicInteger来研究在没有锁的情况下是如何做到数据正确性的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> <span class="type">int</span> value;</span><br><span class="line"><span class="comment">//首先毫无以为，在没有锁的机制下可能需要借助volatile原语，保证线程间的数据是可见的（共享的）。</span></span><br><span class="line"><span class="comment">//这样才获取变量的值的时候才能直接读取。</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">get</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//然后来看看++i是怎么做到的。</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">incrementAndGet</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">current</span> <span class="operator">=</span> get();</span><br><span class="line">        <span class="type">int</span> <span class="variable">next</span> <span class="operator">=</span> current + <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> (compareAndSet(current, next))</span><br><span class="line">            <span class="keyword">return</span> next;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//在这里采用了CAS操作，每次从内存中读取数据然后将此数据和+1后的结果进行CAS操作，如果成功就返回结果，否则重试直到成功为止。</span></span><br><span class="line"><span class="comment">//而compareAndSet利用JNI来完成CPU指令的操作。</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">compareAndSet</span><span class="params">(<span class="type">int</span> expect, <span class="type">int</span> update)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> unsafe.compareAndSwapInt(<span class="built_in">this</span>, valueOffset, expect, update);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>整体的过程就是这样子的，利用CPU的CAS指令，同时借助JNI来完成Java的非阻塞算法。其它原子操作都是利用类似的特性完成的。</p>
+<p>而整个J.U.C都是建立在CAS之上的，因此对于synchronized阻塞算法，J.U.C在性能上有了很大的提升。参考资料的文章中介绍了如果利用CAS构建非阻塞计数器、队列等数据结构。</p>
+<p><font color="red">CAS看起来很爽，但是会导致“ABA问题”。</font></p>
+<p>CAS算法实现一个重要前提需要取出内存中某时刻的数据，而在下时刻比较并替换，那么在这个时间差类会导致数据的变化。</p>
+<blockquote>
+<p>一个线程one从内存位置V中取出A，这时候另一个线程two也从内存中取出A，并且two进行了一些操作变成了B，然后two又将V位置的数据变成A，这时候线程one进行CAS操作发现内存中仍然是A，然后one操作成功。尽管线程one的CAS操作成功，但是不代表这个过程就是没有问题的。如果链表的头在变化了两次后恢复了原值，但是不代表链表就没有变化。因此前面提到的原子操作AtomicStampedReference&#x2F;AtomicMarkableReference就很有用了。这允许一对变化的元素进行原子操作。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+              <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag"># 多线程</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/basic-multi-thread-of-java/" rel="prev" title="Java多线程基础">
+      <i class="fa fa-chevron-left"></i> Java多线程基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/juc-lock-01-framework/" rel="next" title="J.U.C.锁机制 - 框架">
+      J.U.C.锁机制 - 框架 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#AtomicInteger-AtomicLong%E5%92%8CAtomicBoolean"><span class="nav-number">1.</span> <span class="nav-text">AtomicInteger, AtomicLong和AtomicBoolean</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AtomicLongArray"><span class="nav-number">2.</span> <span class="nav-text">AtomicLongArray</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AtomicReference"><span class="nav-number">3.</span> <span class="nav-text">AtomicReference</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AtomicLongFieldUpdater"><span class="nav-number">4.</span> <span class="nav-text">AtomicLongFieldUpdater</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%88%97%E8%A1%A8"><span class="nav-number">4.1.</span> <span class="nav-text">函数列表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AtomicLongFieldUpdater%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.2.</span> <span class="nav-text">AtomicLongFieldUpdater示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#newUpdater-%E6%96%B9%E6%B3%95%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">4.3.</span> <span class="nav-text">newUpdater()方法源代码分析</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E9%87%8D%E6%8E%92%E5%BA%8F"><span class="nav-number">5.</span> <span class="nav-text">指令重排序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Happens-before%E6%B3%95%E5%88%99"><span class="nav-number">6.</span> <span class="nav-text">Happens-before法则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CAS%E6%93%8D%E4%BD%9C"><span class="nav-number">7.</span> <span class="nav-text">CAS操作</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="tmachc"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">tmachc</p>
+  <div class="site-description" itemprop="description">Just Do It.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chenxi-zhao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chenxi-zhao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chenxi.zhao@foxmail.com" title="E-Mail → mailto:chenxi.zhao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tmachc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">56k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:23</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

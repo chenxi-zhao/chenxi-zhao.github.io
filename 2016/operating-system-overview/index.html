@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Monda:300,300italic,400,400italic,700,700italic|Lobster Two:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="进程状态转换就绪等待CPU资源，阻塞等待CPU之外的资源，如I&#x2F;O 进程和线程 进程是资源分配的单位，线程是CPU调度基本单位，进程有独立的内存空间，线程没有，但是线程有寄存器，独立的栈，程序计数器等）  一个进程可以包含多个线程，进程不能直接访问另一进程的变量和数据结构，必须通过进程通信，同一进程的多个线程可以共享部分进程内存">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统知识点概述">
+<meta property="og:url" content="http://example.com/2016/operating-system-overview/index.html">
+<meta property="og:site_name" content="tmachc&#39;s notes">
+<meta property="og:description" content="进程状态转换就绪等待CPU资源，阻塞等待CPU之外的资源，如I&#x2F;O 进程和线程 进程是资源分配的单位，线程是CPU调度基本单位，进程有独立的内存空间，线程没有，但是线程有寄存器，独立的栈，程序计数器等）  一个进程可以包含多个线程，进程不能直接访问另一进程的变量和数据结构，必须通过进程通信，同一进程的多个线程可以共享部分进程内存">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg">
+<meta property="article:published_time" content="2016-01-27T02:38:09.000Z">
+<meta property="article:modified_time" content="2023-01-17T10:46:42.060Z">
+<meta property="article:author" content="tmachc">
+<meta property="article:tag" content="operating_system">
+<meta property="article:tag" content="操作系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg">
+
+<link rel="canonical" href="http://example.com/2016/operating-system-overview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统知识点概述 | tmachc's notes</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">tmachc's notes</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Stay Hungry, Stay Foolish.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/operating-system-overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="tmachc">
+      <meta itemprop="description" content="Just Do It.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tmachc's notes">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统知识点概述
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-27 10:38:09" itemprop="dateCreated datePublished" datetime="2016-01-27T10:38:09+08:00">2016-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-01-17 18:46:42" itemprop="dateModified" datetime="2023-01-17T18:46:42+08:00">2023-01-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/operating-system/" itemprop="url" rel="index"><span itemprop="name">operating_system</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>12 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="进程状态转换"><a href="#进程状态转换" class="headerlink" title="进程状态转换"></a>进程状态转换</h3><p><img src="http://zezhi.qiniudn.com/wp-content/uploads/2014/06/1.jpeg"><br>就绪等待CPU资源，阻塞等待CPU之外的资源，如I&#x2F;O</p>
+<h3 id="进程和线程"><a href="#进程和线程" class="headerlink" title="进程和线程"></a>进程和线程</h3><blockquote>
+<p>进程是资源分配的单位，线程是CPU调度基本单位，进程有独立的内存空间，线程没有，但是线程有寄存器，独立的栈，程序计数器等）</p>
+</blockquote>
+<p>一个进程可以包含多个线程，进程不能直接访问另一进程的变量和数据结构，必须通过进程通信，<font color="red">同一进程的多个线程可以共享部分进程内存</font></p>
+<span id="more"></span>
+
+<h3 id="进程通信方式"><a href="#进程通信方式" class="headerlink" title="进程通信方式"></a>进程通信方式</h3><p><font color="red">管道(Pipe)</font>及有名管道(Named Pipe)—-无格式字节流、缓冲区大小受限<br><font color="red">报文（Message）队列（消息队列）</font>—消息链接表（Posix及System V消息队列）克服了管道的不足，有足够权限向队列写入消息，被赋予读权限的进程读走队列消息<br><font color="red">信号（signal）</font>–通知进程有事情发生共享内存–最快，与其它通信机制，如信号量结合使用，来达到进程间的同步及互斥。<br><font color="red">信号量（semaphore）</font>–主要作为进程间以及同一进程不同线程之间的同步手段<br><font color="red">套接字（Socket）</font>–可以用于不同机器的进程通信</p>
+<h3 id="线程同步的几种方式"><a href="#线程同步的几种方式" class="headerlink" title="线程同步的几种方式"></a>线程同步的几种方式</h3><blockquote>
+<p><font color="red">临界区（Critical Section）、互斥量（Mutex）、信号量（Semaphore）、事件（Event）</font><br>临界区–通过对多线程的串行化来访问公共资源或一段代码，只能一个线程访问，其他线程被挂起，等待释放在抢占<br>互斥量–互斥对象，加锁<br>信号量–同一时刻允许多线程访问访问， 但限制最大数目，其他线程等待<br>事件–通知操作保持同步，方便多线程的优先级比较</p>
+</blockquote>
+<h3 id="线程实现方式"><a href="#线程实现方式" class="headerlink" title="线程实现方式"></a>线程实现方式</h3><blockquote>
+<p>用户线程（User-Level Thread）和内核线程（Kernel-Level Thread，轻量级进程）</p>
+</blockquote>
+<p>1） 用户线程是不需要内核支持在用户程序中实现的线程，应用进程利用线程库提供创建、同步、调度和管理线程的函数来控制用户线程。速度快，不需要用户态&#x2F;核心态切换。处理器时间片以进程为单位分配，线程时间相对减少。<br>2）内核线程：由操作系统内核创建和撤销。内核维护进程及线程的上下文信息以及线程切换。一个内核线程由于I&#x2F;O操作而阻塞，不会影响其它线程的运行。<br><font color="red">用户级线程的程序实体是运行在用户态下的程序，而内核支持线程的程序实体则是可以运行在任何状态下的程序。</font></p>
+<h3 id="用户态和内核态"><a href="#用户态和内核态" class="headerlink" title="用户态和内核态"></a>用户态和内核态</h3><p>在讲述用户态和核心态的区别之前，我们先要说说“特权级”的概念。</p>
+<blockquote>
+<p>创建一个子进程时，是通过调用fork函数来实现的。事实上，fork的工作实际上是以系统调用的方式完成进程创建功能的，具体的工作是由sys_fork负责实施。</p>
+</blockquote>
+<p>对于任何操作系统来说，创建一个新的进程都是属于核心功能，需要分配物理内存，从父进程拷贝相关信息，拷贝设置页目录页表等等</p>
+<p>最关键性的权力必须由高特权级的程序来执行，这样才可以做到集中管理，减少有限资源的访问和使用冲突。</p>
+<p>Intel x86架构的CPU共有0~3四个特权级，0级最高，3级最低，硬件上在执行每条指令时都会对指令所具有的特权级做相应的检查，相关的概念有CPL、DPL和RPL等</p>
+<p>对于Unix&#x2F;Linux来说，只使用了0级特权级和3级特权级。也就是说在Unix&#x2F;Linux系统中，一条工作在0级特权级的指令具有CPU能提供的最高权力，而3级特权级的指令具有CPU提供的最低或者说最基本权力。</p>
+<p>内核态与用户态是操作系统的两种运行级别，3级特权级上，就可以称之为运行在用户态；0级特权级上时，为运行在内核态。运行在用户态下的程序不能直接访问操作系统内核数据结构和程序。当我们在系统中执行一个程序时，大部分时间是运行在用户态下的。通常来说，以下三种情况会导致<font color="red">用户态到内核态的切换</font>：</p>
+<ul>
+<li>系统调用–用户态主要要求切换到核心态。用户态进程通过系统调用申请使用操作系统提供的服务程序完成工作，比如前例中fork()实际执行了一个创建新进程的系统调用。</li>
+<li>异常–当用户态程序运行时，发生了某些事先不可知的异常，这时会触发由当前运行进程切换到处理此异常的内核相关程序中，也就转到了内核态，比如缺页异常。</li>
+<li>外围设备的中断–从用户态程序切换到中断处理程序，被动切换</li>
+</ul>
+<h3 id="用户栈和内核栈"><a href="#用户栈和内核栈" class="headerlink" title="用户栈和内核栈"></a>用户栈和内核栈</h3><p>每个进程会有两个栈，一个用户栈，存在于用户空间，一个内核栈，存在于内核空间。<br>当进程在用户空间运行时，cpu堆栈指针寄存器里面的内容是用户堆栈地址，使用用户栈；当进程在内核空间时，寄存器里面的内容是内核栈空间地址，使用内核栈。<br><font color="red">内核栈保存中断现场以及操作系统进程的信息，用户栈保存用户进程子程序的信息</font><br>只使用用户栈不能给予CPU和系统程序处于内核态时的保护，只使用系统栈，不能完整保存用户程序信息</p>
+<h3 id="内存池、线程池、线程池"><a href="#内存池、线程池、线程池" class="headerlink" title="内存池、线程池、线程池"></a>内存池、线程池、线程池</h3><p>池化技术一言以蔽之就是：提前保存大量的资源，以备不时之需以及重复使用。 主要解决用户态&#x2F;内核态，内存申请释放，进程线程创建销毁等一系列耗时耗能的操作<br>进程池、线程池—-提前启动若干线程并睡眠，当需要开辟线程时，唤醒某一个执行操作， 然后继续处于睡眠状态，而非销毁<br>内存池—-程序首先申请一大块内存作为内存池，当程序需要申请内存时从内存池中获取， 使用完后返回内存池，退出程序或特殊操作释放内存池中内存。</p>
+<h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p>产生原因：1）资源不足 2）程序执行顺序不当 3）资源分配不当<br>产生条件：<br>1）互斥条件，只能一个使用<br>2）请求与保持条件，请求资源被阻塞，保持已有资源<br>3）不剥夺条件，请求资源未使用完不能强行使用<br>4）循环等待<br>动态检查资源，防止等待状态的资源占用等从上述四条件入手解决死锁问题</p>
+<h3 id="进程调度算法"><a href="#进程调度算法" class="headerlink" title="进程调度算法"></a>进程调度算法</h3><p>1）先来先服务FCFS<br>2）短作业优先<br>3）最高优先权优先（FPF）<br>4）高响应比优先调度算法<br>5）时间片轮转法<br>6）多级反馈队列调度算法（按优先权多队列，越高时间片越小，一个时间片未运行完向下一队列排队，长作业进入第N队列，先执行完第一队列）</p>
+<h3 id="Windows内存管理算法"><a href="#Windows内存管理算法" class="headerlink" title="Windows内存管理算法"></a>Windows内存管理算法</h3><p>1）块式，内存浪费<br>2）页式<br>3）段式，程序片段太多，计算段地址浪费资源<br>4）段页式最常用<br>内存分配方式：单一连续分配、固定分区分配、动态分区分配以及动态重定位分区分配。四种方式</p>
+<h3 id="动态链接和静态链接"><a href="#动态链接和静态链接" class="headerlink" title="动态链接和静态链接"></a>动态链接和静态链接</h3><p>动态链接在程序运行获加载时动态加载需要的动态库，可以多程序共享库，但是影响前期加载性能。<br>静态链接是在编译时已经将需要的代码放到调用处，运行时不依赖库。程序独立运行，但可能体积偏大</p>
+<h3 id="基本分页、请求分页储存管理方式。"><a href="#基本分页、请求分页储存管理方式。" class="headerlink" title="基本分页、请求分页储存管理方式。"></a>基本分页、请求分页储存管理方式。</h3><p>基本分页储存管理—-1）一次性，作业全部装入才能运行，内存浪费 2）驻留性，作业装入后一直在内存中。<br>请求分页储存管理—-装入当前需要运行的页面，过程中页面已满，通过算法动态调整页面空间硬件支持：页表机制、缺页中断机构、地址变换机构</p>
+<h3 id="基本分段、请求分段储存管理方式（略）"><a href="#基本分段、请求分段储存管理方式（略）" class="headerlink" title="基本分段、请求分段储存管理方式（略）"></a>基本分段、请求分段储存管理方式（略）</h3><h3 id="分段分页方式的比较各自优缺点"><a href="#分段分页方式的比较各自优缺点" class="headerlink" title="分段分页方式的比较各自优缺点"></a>分段分页方式的比较各自优缺点</h3><p>分段和分页其实都是一种对地址的划分或者映射的方式<br>1）页是信息的物理单位，分页是为实现离散分配方式，以消减内存的外零头，提高内存的利用率；或者说，分页仅仅是由于系统管理的需要，而不是用户的需要（也是对用户透明的）。段是信息的逻辑单位，它含有一组其意义相对完整的信息（比如数据段、代码段和堆栈段等）。分段的目的是为了能更好的满足用户的需要（用户也是可以使用的）。</p>
+<p>2）页的大小固定且由系统确定，把逻辑地址划分为页号和页内地址两部分，是由机器硬件实现的，因而一个系统只能有一种大小的页面。段的长度却不固定，决定于用户所编写的程序，通常由编辑程序在对源程序进行编辑时，根据信息的性质来划分。</p>
+<p>3）分页的作业地址空间是维一的，即单一的线性空间，程序员只须利用一个记忆符（线性地址的16进制表示），即可表示一地址。分段的作业地址空间是二维的，程序员在标识一个地址时，既需给出段名（比如数据段、代码段和堆栈段等），又需给出段内地址。</p>
+<p>4）页和段都有存储保护机制。但存取权限不同：段有读、写和执行三种权限；而页只有读和写两种权限。</p>
+<h3 id="页面置换算法"><a href="#页面置换算法" class="headerlink" title="页面置换算法"></a>页面置换算法</h3><p>1）最佳置换算法（OPT） 2）先进先出置换算法（FIFO） 3）最久未使用置换算法（LRU）</p>
+<h3 id="虚拟内存的定义及实现方式"><a href="#虚拟内存的定义及实现方式" class="headerlink" title="虚拟内存的定义及实现方式"></a>虚拟内存的定义及实现方式</h3><p>虚拟内存是计算机系统内存管理的一种技术。它使得应用程序认为它拥有连续的可用的内存（一个连续完整的地址空间），而实际上，它通常是被分隔成多个物理内存碎片，还有部分暂时存储在外部磁盘存储器上，在需要时进行数据交换。</p>
+<h3 id="操作系统的四个特性"><a href="#操作系统的四个特性" class="headerlink" title="操作系统的四个特性"></a>操作系统的四个特性</h3><p>1）并发（concurrence） 2）共享（sharing） 3）虚拟（Virtual） 4）异步（asynchronism）</p>
+<h3 id="DMA"><a href="#DMA" class="headerlink" title="DMA"></a>DMA</h3><p>直接存储器访问（Direct Memory Access，DMA）是计算机科学中的一种内存访问技术。它允许某些计算机内部的硬件子系统（电脑外设），可以独立地直接读写系统存储器，而不需绕道中央处理器（CPU）。在同等程度的处理器负担下，DMA是一种快速的数据传送方式。很多硬件的系统会使用DMA，包含硬盘控制器、绘图显卡、网卡和声卡。</p>
+<h3 id="Spooling"><a href="#Spooling" class="headerlink" title="Spooling"></a>Spooling</h3><p>SPOOLing(即外部设备联机并行操作)，即Simultaneous Peripheral Operation On-Line的缩写，它是关于慢速字符设备如何与计算机主机交换信息的一种技术，通常称为“假脱机技术”。</p>
+<h3 id="外存分配的几种方式，及其优劣"><a href="#外存分配的几种方式，及其优劣" class="headerlink" title="外存分配的几种方式，及其优劣"></a>外存分配的几种方式，及其优劣</h3><p>1）连续分配—顺序存取，随机存取，速度快，磁盘操作少，但是文件不能动态增长，不利于文件插入，外部碎片等等<br>2）链式分配—提高利用率，有利于文件插入删除，动态扩充，但是速度较慢，从头指针查询，可靠性成疑，链接指针占用空间，按簇分配占用内存空间<br>3）索引分配—FAT中存储文件索引，包含每个分区入口。解决链式问题，继承其优点但是寻道次数和时间偏高，索引表本身会带来部分开销</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/operating-system/" rel="tag"># operating_system</a>
+              <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag"># 操作系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2015/markdown-basic-grammar/" rel="prev" title="markdown-基础语法">
+      <i class="fa fa-chevron-left"></i> markdown-基础语法
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/python-basic-grammar/" rel="next" title="Python基础语法—基础数据类型">
+      Python基础语法—基础数据类型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.</span> <span class="nav-text">进程状态转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%92%8C%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">进程和线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">进程通信方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">线程同步的几种方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">5.</span> <span class="nav-text">线程实现方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%80%81%E5%92%8C%E5%86%85%E6%A0%B8%E6%80%81"><span class="nav-number">6.</span> <span class="nav-text">用户态和内核态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%A0%88%E5%92%8C%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">7.</span> <span class="nav-text">用户栈和内核栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%B1%A0%E3%80%81%E7%BA%BF%E7%A8%8B%E6%B1%A0%E3%80%81%E7%BA%BF%E7%A8%8B%E6%B1%A0"><span class="nav-number">8.</span> <span class="nav-text">内存池、线程池、线程池</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%BB%E9%94%81"><span class="nav-number">9.</span> <span class="nav-text">死锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-number">10.</span> <span class="nav-text">进程调度算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Windows%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E7%AE%97%E6%B3%95"><span class="nav-number">11.</span> <span class="nav-text">Windows内存管理算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5%E5%92%8C%E9%9D%99%E6%80%81%E9%93%BE%E6%8E%A5"><span class="nav-number">12.</span> <span class="nav-text">动态链接和静态链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%88%86%E9%A1%B5%E3%80%81%E8%AF%B7%E6%B1%82%E5%88%86%E9%A1%B5%E5%82%A8%E5%AD%98%E7%AE%A1%E7%90%86%E6%96%B9%E5%BC%8F%E3%80%82"><span class="nav-number">13.</span> <span class="nav-text">基本分页、请求分页储存管理方式。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%88%86%E6%AE%B5%E3%80%81%E8%AF%B7%E6%B1%82%E5%88%86%E6%AE%B5%E5%82%A8%E5%AD%98%E7%AE%A1%E7%90%86%E6%96%B9%E5%BC%8F%EF%BC%88%E7%95%A5%EF%BC%89"><span class="nav-number">14.</span> <span class="nav-text">基本分段、请求分段储存管理方式（略）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%AE%B5%E5%88%86%E9%A1%B5%E6%96%B9%E5%BC%8F%E7%9A%84%E6%AF%94%E8%BE%83%E5%90%84%E8%87%AA%E4%BC%98%E7%BC%BA%E7%82%B9"><span class="nav-number">15.</span> <span class="nav-text">分段分页方式的比较各自优缺点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">16.</span> <span class="nav-text">页面置换算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E7%9A%84%E5%AE%9A%E4%B9%89%E5%8F%8A%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">17.</span> <span class="nav-text">虚拟内存的定义及实现方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%9B%9B%E4%B8%AA%E7%89%B9%E6%80%A7"><span class="nav-number">18.</span> <span class="nav-text">操作系统的四个特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMA"><span class="nav-number">19.</span> <span class="nav-text">DMA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spooling"><span class="nav-number">20.</span> <span class="nav-text">Spooling</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%96%E5%AD%98%E5%88%86%E9%85%8D%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F%EF%BC%8C%E5%8F%8A%E5%85%B6%E4%BC%98%E5%8A%A3"><span class="nav-number">21.</span> <span class="nav-text">外存分配的几种方式，及其优劣</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="tmachc"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">tmachc</p>
+  <div class="site-description" itemprop="description">Just Do It.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chenxi-zhao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chenxi-zhao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chenxi.zhao@foxmail.com" title="E-Mail → mailto:chenxi.zhao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tmachc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">56k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:23</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

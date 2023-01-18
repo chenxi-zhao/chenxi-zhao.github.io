@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Monda:300,300italic,400,400italic,700,700italic|Lobster Two:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="高可用的网站架构实现高可用架构的主要手段是数据和服务的冗余备份以及失效转移，一旦某些服务器宕机，就将服务切换到其他可用的服务器上，如果磁盘损坏，则从备用的磁盘中读取数据。 典型的网站架构主要分为三层：应用层，服务层，数据层。  以百度为例：应用层主要部署了文库、贴吧、百科等产品服务服务层主要部署了登录、百度账户等百度的通用可复用的服务数据层主要部署了文件、数据库、缓存、搜索等数据服务">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大型网站技术架构读书笔记--可用性">
+<meta property="og:url" content="http://example.com/2016/large-website-architecture-notes-3/index.html">
+<meta property="og:site_name" content="tmachc&#39;s notes">
+<meta property="og:description" content="高可用的网站架构实现高可用架构的主要手段是数据和服务的冗余备份以及失效转移，一旦某些服务器宕机，就将服务切换到其他可用的服务器上，如果磁盘损坏，则从备用的磁盘中读取数据。 典型的网站架构主要分为三层：应用层，服务层，数据层。  以百度为例：应用层主要部署了文库、贴吧、百科等产品服务服务层主要部署了登录、百度账户等百度的通用可复用的服务数据层主要部署了文件、数据库、缓存、搜索等数据服务">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-05-31T09:21:03.000Z">
+<meta property="article:modified_time" content="2023-01-17T10:46:42.059Z">
+<meta property="article:author" content="tmachc">
+<meta property="article:tag" content="架构">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2016/large-website-architecture-notes-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>大型网站技术架构读书笔记--可用性 | tmachc's notes</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">tmachc's notes</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Stay Hungry, Stay Foolish.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/large-website-architecture-notes-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="tmachc">
+      <meta itemprop="description" content="Just Do It.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tmachc's notes">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          大型网站技术架构读书笔记--可用性
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-05-31 17:21:03" itemprop="dateCreated datePublished" datetime="2016-05-31T17:21:03+08:00">2016-05-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-01-17 18:46:42" itemprop="dateModified" datetime="2023-01-17T18:46:42+08:00">2023-01-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/website-architecture/" itemprop="url" rel="index"><span itemprop="name">website_architecture</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h4 id="高可用的网站架构"><a href="#高可用的网站架构" class="headerlink" title="高可用的网站架构"></a>高可用的网站架构</h4><p>实现高可用架构的主要手段是数据和服务的冗余备份以及失效转移，一旦某些服务器宕机，就将服务切换到其他可用的服务器上，如果磁盘损坏，则从备用的磁盘中读取数据。</p>
+<p><strong>典型的网站架构主要分为三层：应用层，服务层，数据层。</strong></p>
+<blockquote>
+<p>以百度为例：<br>应用层主要部署了文库、贴吧、百科等产品服务<br>服务层主要部署了登录、百度账户等百度的通用可复用的服务<br>数据层主要部署了文件、数据库、缓存、搜索等数据服务</p>
+</blockquote>
+<span id="more"></span>
+
+<h4 id="高可用的应用"><a href="#高可用的应用" class="headerlink" title="高可用的应用"></a>高可用的应用</h4><blockquote>
+<p>无状态性：不保存业务上下文信息，请求到任意服务器得到的结果完全一样</p>
+</blockquote>
+<p>1、 通过负载均衡进行无状态服务的失效转移<br>分发请求到各服务器处理，通过心跳检测发现某服务器失去响应，就将其从可用服务列表中删除</p>
+<p>2、应用服务器的Session管理</p>
+<ul>
+<li>session复制： 服务器间同步session信息，适用于集群小的架构</li>
+<li>session绑定： 利用负载均衡源地址Hash算法将统一IP请求发送到同一台服务器上，但是服务器挂掉session就没了</li>
+<li>cookie记录session</li>
+<li>session服务器</li>
+</ul>
+<h4 id="高可用的服务"><a href="#高可用的服务" class="headerlink" title="高可用的服务"></a>高可用的服务</h4><p>可复用的服务模块为业务产品提供了基础公共服务，大型网站中这些服务通常都独立分布式部署，被具体应用远程调用</p>
+<ol>
+<li><p>分级管理<br>核心服务和应用优先使用更好的硬件设备</p>
+</li>
+<li><p>超时设置<br>程序中设置服务调用超时时间，超时抛出异常，然后根据调度策略选择重试或者换一台服务器访问</p>
+</li>
+<li><p>异步调用<br>应用对服务的调用通过消息队列等异步方式，避免一个服务失败导致整个应用请求失败的情况，但需要注意使用场景</p>
+</li>
+<li><p>服务降级<br>大并发导致性能下降，服务降级的两种手段**<code>拒绝服务</code><strong>和</strong><code>关闭服务</code>**。<br>**<code>拒绝服务</code>**： 拒绝低优先级的服务调用，确保核心应用正常或随机拒绝部分请求<br>**<code>关闭服务</code>**： 关闭部分不重要的服务以节约内存开销</p>
+</li>
+<li><p>幂等性设置<br>保证服务重复调用和一次调用的一致性，避免因虚假失败（执行成功但是无响应）而产生的重复调用（比如转账）产生严重后果</p>
+</li>
+</ol>
+<h4 id="高可用的数据"><a href="#高可用的数据" class="headerlink" title="高可用的数据"></a>高可用的数据</h4><p>保证数据存储高可用的手段主要是数据备份和失效转移机制。</p>
+<h5 id="CAP原理"><a href="#CAP原理" class="headerlink" title="CAP原理"></a>CAP原理</h5><ol>
+<li><p>数据持久性<br>保证数据可持久存储，写入数据时备份多个副本</p>
+</li>
+<li><p>数据可访问性<br>任何时候任意应用都能正常访问数据，一个设备损坏时，切换数据访问到可访问数据存储设备上</p>
+</li>
+<li><p>数据一致性<br>保证多个副本之间的数据保持一致</p>
+<blockquote>
+<p>数据强一致：任何时候各个副本数据在物理存储中应该是一致的，数据操作结果和操作响应一致<br>数据用户一致：副本数据可能不一致，但用户访问时自动校验纠错可以返回一个一致而正确的数据<br>数据最终一致：用户访问可能不一致，但是系统经过一段时间修复和修正，最终达到一致</p>
+</blockquote>
+</li>
+</ol>
+<p>CAP原理认为一个存储系统无法同时满足数据一致性（Consistency）、数据可用性（Availibility）、分区耐受性（Partition Tolerance，系统具有跨网络分区的伸缩性）。</p>
+<p>一般在大型网站中会选择强化分布式存储系统的可用性（A）和伸缩性（P），在一定程度上放弃一致性。</p>
+<h5 id="数据备份"><a href="#数据备份" class="headerlink" title="数据备份"></a>数据备份</h5><blockquote>
+<p>数据冷备不能保存数据最终一致，也不能保证数据可用性，但简单廉价</p>
+</blockquote>
+<p>1、异步热备方式<br>应用程序连接其中一台数据服务器，数据写入时只写入连接数据库就响应成功，其他数据库通过异步线程或者消息队列同步数据</p>
+<p>2、同步热备方式<br>多份数据副本写入操作同步完成，收到成功响应时数据全部同步成功，但如果失败，可能有部分副本已经成功</p>
+<p>传统关系型数据库热备机制就是通常所说的主从同步机制，主从同步不仅解决了数据备份问题，还提高了数据库系统性能。<br>读写中常常使用读写分离访问，及写操作访问主数据库（Master），读操作访问从数据库（Slave）。</p>
+<h5 id="失效转移"><a href="#失效转移" class="headerlink" title="失效转移"></a>失效转移</h5><p>如果服务器集群中任何一台服务器宕机，那么应用程序针对这台服务器的所有读写操作都需要重新路由到其他服务器，保证数据访问不失败，这个过程就是失效转移。</p>
+<p>失效转移主要分为三个部分：失效确认，访问转移、数据恢复。</p>
+<p>1、失效确认<br>确认服务器是否宕机：心跳检测和应用程序访问失败报告。<br>对于应用的访问失败报告，控制中心需要再次发送心跳检测进行确认是否宕机，避免多副本数据不一致导致后续问题复杂化。</p>
+<p>2、访问转移<br>完全对等服务器直接切换，不对等服务器重新计算路由然后选择存储服务器。</p>
+<h4 id="高可用的软件质量保证"><a href="#高可用的软件质量保证" class="headerlink" title="高可用的软件质量保证"></a>高可用的软件质量保证</h4><p>1、网站发布<br>依次关闭集群中的小部分服务器同步更新然后重启。</p>
+<p>2、自动化测试<br>开发自动化测试工具（如Selenium），一键部署，测试数据生成、测试执行、测试报告生成自动化完成。</p>
+<p>3、预发布验证<br>现在预发布服务器上测试完成，再将代码同步到正式应用服务器上，预发布服务器与正式服务器仅载均衡配置有差异。</p>
+<p>4、代码控制<br>代码版本控制工具：GIT、SVN等。</p>
+<p>5、自动化发布<br>火车发布模型。根据响应驱动流程，自动化构造代码分支，进行代码合并，执行发布脚本等。</p>
+<p>6、灰度发布<br>即每天发布一部分服务器，持续几天将整个集群全部发布，用来解决大型网站规模大不利于发生故障的时候及时回滚。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%9E%B6%E6%9E%84/" rel="tag"># 架构</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/large-website-architecture-notes-2/" rel="prev" title="大型网站技术架构读书笔记--性能优化">
+      <i class="fa fa-chevron-left"></i> 大型网站技术架构读书笔记--性能优化
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/large-website-architecture-notes-4/" rel="next" title="大型网站技术架构读书笔记--伸缩性">
+      大型网站技术架构读书笔记--伸缩性 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84%E7%BD%91%E7%AB%99%E6%9E%B6%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">高可用的网站架构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">高可用的应用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84%E6%9C%8D%E5%8A%A1"><span class="nav-number">3.</span> <span class="nav-text">高可用的服务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="nav-number">4.</span> <span class="nav-text">高可用的数据</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#CAP%E5%8E%9F%E7%90%86"><span class="nav-number">4.1.</span> <span class="nav-text">CAP原理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%87%E4%BB%BD"><span class="nav-number">4.2.</span> <span class="nav-text">数据备份</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A4%B1%E6%95%88%E8%BD%AC%E7%A7%BB"><span class="nav-number">4.3.</span> <span class="nav-text">失效转移</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84%E8%BD%AF%E4%BB%B6%E8%B4%A8%E9%87%8F%E4%BF%9D%E8%AF%81"><span class="nav-number">5.</span> <span class="nav-text">高可用的软件质量保证</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="tmachc"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">tmachc</p>
+  <div class="site-description" itemprop="description">Just Do It.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chenxi-zhao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chenxi-zhao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chenxi.zhao@foxmail.com" title="E-Mail → mailto:chenxi.zhao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tmachc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">56k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:23</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
